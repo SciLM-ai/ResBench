@@ -1,0 +1,16 @@
+{
+  "ensemble": "a",
+  "n_volumes": 4096,
+  "n_steps": 50,
+  "cfg_scale": 3.0,
+  "solver": "explicit Euler (verbatim FlowMatching.sample replica)",
+  "ckpt": "/work/08405/ilgar/vista/genflows_runs_backup_ls6/reservoirs_inpainting/checkpoints/flow_matching.pt",
+  "samples_per_condition": 1,
+  "batch_size": 256,
+  "noise_rule": "torch CPU Generator seed = fresh_noise_seed*1000 + k",
+  "binarization": "x > 0",
+  "hard_replacement": false,
+  "wall_clock_s": 927.9,
+  "torch": "2.10.0+cu126",
+  "gpu": "NVIDIA GH200 120GB"
+}

@@ -1,0 +1,83 @@
+{
+  "lobe": {
+    "pooled_pct": 0.0,
+    "by_config_pct": {
+      "1well": 0.0,
+      "2wells": 0.0,
+      "3wells": 0.0
+    },
+    "n_mask_voxels": 16352
+  },
+  "channel:PV_SHOESTRING": {
+    "pooled_pct": 0.0,
+    "by_config_pct": {
+      "1well": 0.0,
+      "2wells": 0.0,
+      "3wells": 0.0
+    },
+    "n_mask_voxels": 16352
+  },
+  "channel:CB_LABYRINTH": {
+    "pooled_pct": 0.0,
+    "by_config_pct": {
+      "1well": 0.0,
+      "2wells": 0.0,
+      "3wells": 0.0
+    },
+    "n_mask_voxels": 16352
+  },
+  "channel:CB_JIGSAW": {
+    "pooled_pct": 0.0,
+    "by_config_pct": {
+      "1well": 0.0,
+      "2wells": 0.0,
+      "3wells": 0.0
+    },
+    "n_mask_voxels": 16352
+  },
+  "channel:SH_DISTAL": {
+    "pooled_pct": 0.0,
+    "by_config_pct": {
+      "1well": 0.0,
+      "2wells": 0.0,
+      "3wells": 0.0
+    },
+    "n_mask_voxels": 16352
+  },
+  "channel:SH_PROXIMAL": {
+    "pooled_pct": 0.0,
+    "by_config_pct": {
+      "1well": 0.0,
+      "2wells": 0.0,
+      "3wells": 0.0
+    },
+    "n_mask_voxels": 16352
+  },
+  "channel:MEANDER_OXBOW": {
+    "pooled_pct": 0.0,
+    "by_config_pct": {
+      "1well": 0.0,
+      "2wells": 0.0,
+      "3wells": 0.0
+    },
+    "n_mask_voxels": 16352
+  },
+  "delta": {
+    "pooled_pct": 0.0,
+    "by_config_pct": {
+      "1well": 0.0,
+      "2wells": 0.0,
+      "3wells": 0.0
+    },
+    "n_mask_voxels": 16352
+  },
+  "__pooled__": {
+    "pooled_pct": 0.0,
+    "by_config_pct": {
+      "1well": 0.0,
+      "2wells": 0.0,
+      "3wells": 0.0
+    },
+    "n_mask_voxels": 130816
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "manifest_seed": 20260726,
+  "n_per_env": 512,
+  "n_well_rows_per_env": 256,
+  "well_configs_cycle": [
+    "1well",
+    "2wells",
+    "3wells"
+  ],
+  "checkpoint": {
+    "path": "/work/08405/ilgar/vista/genflows_runs_backup_ls6/reservoirs_inpainting/checkpoints/flow_matching.pt",
+    "md5": "759a047f0ea609b9e0c1926aaf55fbf1"
+  },
+  "cond_stats": {
+    "path": "/work/08405/ilgar/vista/genflows_runs_backup_ls6/reservoirs_inpainting/checkpoints/cond_stats.npz",
+    "md5": "76f805f8ab1a2665096e8bf3ff8b37ac"
+  },
+  "data_dir": "/scratch/08405/ilgar/SiliciclasticReservoirs",
+  "git": {
+    "resflow": "3138dcb38b43f95ef01c2e9541a7bb0caaaffd39",
+    "resbench": "bd6ec6264360bbc43ba070de0cda4d0b2d5382f8"
+  },
+  "versions": {
+    "python": "3.12.13",
+    "torch": "2.10.0+cu126",
+    "numpy": "2.3.5",
+    "pandas": "3.0.5"
+  },
+  "gpu": "NVIDIA GH200 120GB"
+}
