@@ -1,0 +1,6 @@
+__pycache__/
+*.egg-info/
+.pytest_cache/
+*.pyc
+# volume ensembles live outside the repo; results (parquet/figures/tables) are committed
+volumes/
