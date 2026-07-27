@@ -609,7 +609,7 @@ Stated in advance of any specialist score.
 
 Recorded during training, before any specialist validation loss or score
 was computed. To meet the rebuttal deadline, the lobe specialist run is
-switched from 1× GH200 to 2× GH200 DDP (nodes c611-041 + c608-061) at
+switched from 1× GH200 to 2× GH200 DDP (nodes c608-122 + c611-041) at
 its epoch-5 checkpoint, resuming from `training_state.pt`. Training
 semantics are unchanged: same global batch 384 (now 2 ranks × 192, each
 accumulated as 96 × 2), same peak LR 3.4641e-3 (the wrapper deliberately
@@ -621,7 +621,9 @@ accumulated means equals the single-GPU accumulated mean (GroupNorm-only
 model), so the gradient computation is identical to E.2. Disclosed
 differences: within-epoch data order (per-rank DistributedSampler
 shuffle, seed 42, vs one global shuffle stream) and per-rank FM
-noise/CFG draws (torch seeds 8102 + rank). The PV_SHOESTRING run is
-unaffected (1× GH200 throughout). Both variants of the launcher and the
+noise/CFG draws (torch seeds 8102 + rank). The PV_SHOESTRING run stays
+1× GH200 throughout; it is relocated to node c608-061 at its epoch-10
+checkpoint (pure resume, no semantic change) to free c608-122 for the
+lobe DDP pair. Both variants of the launcher and the
 DDP code path are in `scripts/specialists/` (ResFlow repo), smoke-tested
 before the switch.
