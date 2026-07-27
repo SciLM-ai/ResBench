@@ -14,16 +14,29 @@ Monte-Carlo band: **inside** (≤ band), **near** (≤ 2× band), **outside**.
 | environment | \|dNTG\| | variogram MAE/sill | connectivity MAE | geobody W1 (log10) | \|d largest frac\| | well mismatch % |
 |---|---|---|---|---|---|---|
 | lobe | 0.0026 (inside; band 0.0253) | 0.0121 (near; band 0.0065) | 0.0356 (near; band 0.0274) | 0.0588 (near; band 0.0305) | 0.0227 (inside; band 0.0386) | 0.000 (inside) |
-| channel:PV_SHOESTRING | 0.0069 (near; band 0.0050) | 0.0202 (near; band 0.0115) | 0.0034 (outside; band 0.0014) | 0.0210 (near; band 0.0125) | 0.0443 (outside; band 0.0117) | 0.000 (inside) |
-| channel:CB_LABYRINTH | 0.0025 (inside; band 0.0058) | 0.0176 (inside; band 0.0226) | 0.0024 (outside; band 0.0009) | 0.0139 (inside; band 0.0176) | 0.0189 (outside; band 0.0011) | 0.000 (inside) |
+| channel:PV_SHOESTRING | 0.0069 (near; band 0.0050) | 0.0202 (near; band 0.0115) | 0.0034† (outside; band 0.0014) | 0.0210 (near; band 0.0125) | 0.0443 (outside; band 0.0117) | 0.000 (inside) |
+| channel:CB_LABYRINTH | 0.0025 (inside; band 0.0058) | 0.0176 (inside; band 0.0226) | 0.0024† (outside; band 0.0009) | 0.0139 (inside; band 0.0176) | 0.0189 (outside; band 0.0011) | 0.000 (inside) |
 | channel:CB_JIGSAW | 0.0048 (inside; band 0.0091) | 0.0186 (near; band 0.0113) | 0.0010 (inside; band 0.0010) | 0.0129 (near; band 0.0067) | 0.0087 (outside; band 0.0038) | 0.000 (inside) |
-| channel:SH_DISTAL | 0.0104 (inside; band 0.0189) | 0.0364 (outside; band 0.0122) | 0.0001 (outside; band 0.0000) | 0.9709 (outside; band 0.1344) | 0.0000 (inside; band 0.0001) | 0.000 (inside) |
+| channel:SH_DISTAL | 0.0104 (inside; band 0.0189) | 0.0364 (outside; band 0.0122) | 0.0001† (outside; band 0.0000) | 0.9709 (outside; band 0.1344) | 0.0000 (inside; band 0.0001) | 0.000 (inside) |
 | channel:SH_PROXIMAL | 0.0087 (inside; band 0.0171) | 0.0276 (outside; band 0.0067) | 0.0003 (inside; band 0.0003) | 0.0177 (inside; band 0.0189) | 0.0011 (inside; band 0.0017) | 0.000 (inside) |
-| channel:MEANDER_OXBOW | 0.0023 (inside; band 0.0044) | 0.0136 (near; band 0.0069) | 0.0005 (outside; band 0.0001) | 0.0077 (outside; band 0.0028) | 0.0026 (near; band 0.0016) | 0.000 (inside) |
+| channel:MEANDER_OXBOW | 0.0023 (inside; band 0.0044) | 0.0136 (near; band 0.0069) | 0.0005† (outside; band 0.0001) | 0.0077 (outside; band 0.0028) | 0.0026 (near; band 0.0016) | 0.000 (inside) |
 | delta | 0.0078 (inside; band 0.0117) | 0.0150 (outside; band 0.0054) | 0.0009 (inside; band 0.0027) | 0.0308 (near; band 0.0234) | 0.0085 (inside; band 0.0182) | 0.000 (inside) |
 | **pooled** | 0.0034 (inside; band 0.0060) | 0.0133 (outside; band 0.0039) | 0.0054 (outside; band 0.0021) | 0.0143 (inside; band 0.0219) | 0.0109 (near; band 0.0075) | 0.000 (inside) |
 
+† **Band saturation.** In these environments the sand phase percolates, so
+τ(h) ≈ 1 with almost no ensemble variance and the split-half band collapses
+to 10⁻⁵–10⁻³. The absolute MAE printed in the cell is the primary read
+(0.0001–0.0034 — τ reproduced to within ~0.3% of its full [0, 1] scale);
+the inside/near/outside verdict is secondary wherever the band saturates.
+
 Well mismatch by config, pooled: 1 well 0.000% · 2 wells 0.000% · 3 wells 0.000%.
+
+*Pooled geobody-W1 arithmetic:* the pooled row compares the *pooled body
+populations* of all environments, so environments with many bodies per
+volume (CB jigsaw ~120, meander-oxbow ~78) dominate the pooled distribution
+while SH distal's ~1–3 bodies/volume barely register — which is why pooled
+W1 (0.0143, inside) can coexist with the large SH-distal cell. The
+per-environment rows are the informative ones for this column.
 
 Figures: [NTG parity](results/ntg_parity.pdf) ·
 [variogram overlays](results/variogram_overlays.pdf) ·
@@ -70,10 +83,13 @@ undershoot and the lobe τ excess this is a coherent mild
 **over-connectivity** signature.
 
 **Well exactitude.** 0.000% mismatch over 8 environments × {1, 2, 3}-well
-configs (130,816 conditioning voxels): the hard-replacement guarantee of the
-sampling pipeline is verified end to end, and the audit confirms masks,
-carved well values, and generated volumes stay aligned through the whole
-harness.
+configs (130,816 conditioning voxels). This is exactitude *by construction*:
+Table 6 specifies hard replacement of well voxels after the final ODE step,
+so the number verifies **pipeline integrity** — that masks, carved well
+values, and generated volumes stay aligned end to end through the whole
+harness — rather than a learned ability. How well the model *learns* to
+honor well data away from the replaced voxels is assessed by the
+conditional-entropy calibration (EVAL.md Addendum A; results below).
 
 ## Supplementary connectivity diagnostics (post-hoc, reference ensemble)
 
@@ -137,24 +153,99 @@ compartmentalization-frequency comparison (reference vs ResFlow) would
 quantify this and is a natural supplementary table if reviewers press on
 connectivity.
 
+## Post-hoc analyses (EVAL.md Addendum A.6 — diagnostics, not re-scoring)
+
+### Geobody W1 vs minimum body size (item 2)
+
+Full table: `results/posthoc/posthoc_geobody.md`. Key cells (W1, verdict
+against the same-filter split-half band):
+
+| environment | min ≥ 1 (frozen) | min ≥ 2 | min ≥ 8 |
+|---|---|---|---|
+| channel:SH_DISTAL | 0.9709 (outside; 0.1344) | 0.7078 (outside; 0.1122) | 0.5410 (outside; 0.1083) |
+| lobe | 0.0588 (near) | 0.1565 (outside) | 0.0538 (inside) |
+| pooled | 0.0143 | 0.0491 | 0.1079 |
+
+**The speck-filter expectation is REFUTED for SH distal**: removing 1-voxel
+(min ≥ 2) and sub-8-voxel bodies lowers W1 (0.97 → 0.71 → 0.54) but it stays
+far outside its band — the generated excess of small fragments extends into
+the 2–100-voxel range, not just single-voxel debris. Elsewhere the filter is
+not monotone (removing speck mass re-weights the comparison toward mid-size
+bodies where discrepancies differ), so the min ≥ 1 frozen column remains the
+primary read and the anomalies list below is updated accordingly.
+
+### Per-volume compartmentalization: reference vs ResFlow (item 3)
+
+Full table with Wilson 95% CIs: `results/posthoc/posthoc_geobody.md`.
+Headline rows (% volumes with per-volume τ_z < 0.99; % volumes with a
+floor-to-surface spanning body; largest-frac median [IQR]):
+
+- **channel:PV_SHOESTRING** — compartmentalization *frequency* is
+  reproduced: 28.7% [25.0, 32.8] ref vs 27.0% [23.3, 31.0] gen
+  (overlapping CIs). But vertical *spanning* is over-produced: 74.0%
+  [70.1, 77.6] ref vs 85.2% [81.8, 88.0] gen (disjoint), and the
+  largest-frac lower quartile collapses (ref IQR [0.903, 0.998] vs gen
+  [0.980, 0.998]): ResFlow generates compartmentalized volumes at the right
+  *rate* but under-produces the *severely* compartmentalized ones.
+- **channel:CB_LABYRINTH** — fragmentation under-produced outright: 18.4%
+  [15.2, 21.9] ref vs 11.5% [9.0, 14.6] gen; spanning 90.8% vs 95.1%
+  (both disjoint).
+- **lobe** — 88.5% [85.4, 91.0] ref vs 82.2% [78.7, 85.3] gen (disjoint):
+  modest over-connection, consistent with the τ overlay.
+- SH distal/proximal, meander-oxbow, CB jigsaw, delta: ref and gen agree
+  within CIs on all three statistics.
+
+### CFG sensitivity sweep (item 4)
+
+lobe + channel:PV_SHOESTRING, 128 samples per point at CFG {1.0, 1.5, 2.0,
+3.0}, fresh logged seeds, deltas vs the **matched 128 reference rows**
+(`results/posthoc/cfg_sweep.md`, figure `cfg_sweep.pdf/png`):
+
+- **The over-smoothing/over-connection signature persists at CFG 1.0** —
+  γ_z plateau deviation is flat in CFG for lobe (−0.006 ± 0.001 at every
+  scale) and small at all scales for PV; lobe compartmentalization
+  frequency sits at ~76% vs ref 84% at *every* scale; PV largest-fraction
+  excess (~0.92–0.94 vs ref 0.90) persists at every scale. The
+  mode-seeking-CFG hypothesis is **refuted as the primary cause**: the
+  signature is intrinsic to the learned distribution (training data
+  processing, architecture, or the 50-step Euler discretization).
+- What CFG *does* modulate: NTG rises monotonically with scale (lobe
+  −0.011 at CFG 1.0 → +0.002 at 3.0, crossing zero near the deployed
+  setting; PV +0.003 → +0.007), and PV compartmentalization frequency
+  *improves* with scale (39.1% at 1.0 → 30.5% at 3.0, ref 27.3%) — at the
+  deployed CFG 3.0 both sweep environments are at or near their best
+  operating point among the scales tested.
+- Caveat: 128 samples/point → Wilson ±8% on frequency estimates;
+  directional conclusions above exceed that, per-cell values are noisier
+  than the master table's.
+
 ## Anomalies to look at before writing the rebuttal
 
-- **SH distal geobody W1 = 0.97 (7× band)** is *speck debris*, not missing
-  structure: the reference has 2.6 bodies/volume (one ~10⁵-voxel sheet plus
-  a few fragments; 30% singletons), ResFlow has 5.2 bodies/volume (50%
-  singletons, median size 2 voxels) while reproducing the sheet itself
-  (max size, p90, and largest-fraction all match; |Δ largest frac| = 0.0000).
-  ≈ 5 extra isolated sand voxels per 131k-voxel volume, i.e. ~0.004% of
-  voxels, but they dominate the pooled size *distribution* because the
-  environment has so few bodies. A 1–2-voxel minimum-body-size filter would
-  likely move this cell inside the band — worth a sensitivity note.
-- **Systematic vertical over-smoothing**: γ_z plateau undershoot in five
-  environments plus over-connection (largest-fraction up, lobe τ up).
-  Consistent with CFG = 3.0 mode-seeking; a CFG-scale sensitivity sweep
-  (e.g. 1.0/2.0/3.0 on one environment) would localize the cause.
-- **PV shoestring largest-fraction +0.044 with disjoint CIs**: isolated
-  shoestring bodies merge more often than in ResMill; also the only
-  environment whose NTG delta is *near* rather than inside.
+- **SH distal geobody W1 = 0.97 (7× band)**: an excess population of small
+  fragments (5.2 vs 2.6 bodies/volume; 50% vs 30% singletons) around a
+  correctly reproduced giant sheet (max size, p90, |Δ largest frac| =
+  0.0000 all match). *Post-hoc update (item 2)*: a minimum-body-size filter
+  does **not** move the cell inside the band (0.97 → 0.71 at min ≥ 2 →
+  0.54 at min ≥ 8, band ≈ 0.11) — the fragment excess extends into the
+  2–100-voxel range, not just 1-voxel debris. Still ~0.004% of voxels; it
+  dominates only because the environment has ~3 bodies/volume.
+- **Systematic vertical over-smoothing / over-connection**: γ_z plateau
+  undershoot in five environments, largest-fraction up in the channel-belt
+  families, lobe τ up. *Post-hoc update (item 4)*: the CFG sweep **refutes
+  guidance mode-seeking as the primary cause** — the signature persists
+  essentially unchanged at CFG 1.0. It is intrinsic to the learned
+  distribution (candidate causes: training-data processing, purely
+  convolutional architecture's receptive field in z, or the 50-step Euler
+  discretization). CFG mainly shifts NTG (monotone, crossing zero near the
+  deployed 3.0 for lobe) and *improves* PV compartmentalization frequency.
+- **PV shoestring largest-fraction +0.044 with disjoint CIs**: *post-hoc
+  update (item 3)*: the model reproduces the *rate* of compartmentalized
+  volumes (27.0% vs 28.7% ref, overlapping CIs) but under-produces the
+  *severely* compartmentalized tail (largest-frac lower quartile 0.980 vs
+  0.903 ref) and over-produces floor-to-surface spanning (85.2% vs 74.0%,
+  disjoint). CB labyrinth under-produces fragmentation outright (11.5% vs
+  18.4%). Also the only environment whose NTG delta is *near* rather than
+  inside.
 - **Tight-band caveat for τ**: split-half bands of 10⁻⁴–10⁻³ make
   connectivity verdicts hypersensitive; absolute MAEs are ≤ 0.0034 in all
   four *outside* cells. Report absolute values alongside verdicts.

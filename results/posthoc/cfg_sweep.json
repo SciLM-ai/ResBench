@@ -1,0 +1,102 @@
+[
+  {
+    "environment": "lobe",
+    "cfg": 1.0,
+    "n": 128,
+    "dntg": -0.010935783386230469,
+    "gamma_z_plateau_dev": -0.0056684872703860745,
+    "largest_frac": 0.5148055544022047,
+    "ref_largest_frac": 0.4547571514761568,
+    "dlargest_frac": 0.06004840292604785,
+    "comp_freq": 0.7578125,
+    "comp_freq_ref": 0.84375,
+    "tau_mae": 0.05329226363907367
+  },
+  {
+    "environment": "lobe",
+    "cfg": 1.5,
+    "n": 128,
+    "dntg": -0.00584036111831665,
+    "gamma_z_plateau_dev": -0.006691168587479285,
+    "largest_frac": 0.5160851700828276,
+    "ref_largest_frac": 0.4547571514761568,
+    "dlargest_frac": 0.06132801860667081,
+    "comp_freq": 0.765625,
+    "comp_freq_ref": 0.84375,
+    "tau_mae": 0.05726332393153377
+  },
+  {
+    "environment": "lobe",
+    "cfg": 2.0,
+    "n": 128,
+    "dntg": -0.0019360184669494629,
+    "gamma_z_plateau_dev": -0.005370674277442755,
+    "largest_frac": 0.5083045441760417,
+    "ref_largest_frac": 0.4547571514761568,
+    "dlargest_frac": 0.053547392699884844,
+    "comp_freq": 0.765625,
+    "comp_freq_ref": 0.84375,
+    "tau_mae": 0.04921531146383804
+  },
+  {
+    "environment": "lobe",
+    "cfg": 3.0,
+    "n": 128,
+    "dntg": 0.0021461844444274902,
+    "gamma_z_plateau_dev": -0.005590352731797588,
+    "largest_frac": 0.49407402238300346,
+    "ref_largest_frac": 0.4547571514761568,
+    "dlargest_frac": 0.03931687090684666,
+    "comp_freq": 0.75,
+    "comp_freq_ref": 0.84375,
+    "tau_mae": 0.03921447728532802
+  },
+  {
+    "environment": "channel:PV_SHOESTRING",
+    "cfg": 1.0,
+    "n": 128,
+    "dntg": 0.0024796128273010254,
+    "gamma_z_plateau_dev": -0.0005616707606212468,
+    "largest_frac": 0.928084487730796,
+    "ref_largest_frac": 0.9129133366633019,
+    "dlargest_frac": 0.015171151067494115,
+    "comp_freq": 0.390625,
+    "comp_freq_ref": 0.2734375
+  },
+  {
+    "environment": "channel:PV_SHOESTRING",
+    "cfg": 1.5,
+    "n": 128,
+    "dntg": 0.0034164786338806152,
+    "gamma_z_plateau_dev": -0.0015519893544623242,
+    "largest_frac": 0.9258794048149368,
+    "ref_largest_frac": 0.9129133366633019,
+    "dlargest_frac": 0.012966068151634924,
+    "comp_freq": 0.3671875,
+    "comp_freq_ref": 0.2734375
+  },
+  {
+    "environment": "channel:PV_SHOESTRING",
+    "cfg": 2.0,
+    "n": 128,
+    "dntg": 0.006221890449523926,
+    "gamma_z_plateau_dev": -0.0051457570166697775,
+    "largest_frac": 0.923127318823417,
+    "ref_largest_frac": 0.9129133366633019,
+    "dlargest_frac": 0.010213982160115154,
+    "comp_freq": 0.34375,
+    "comp_freq_ref": 0.2734375
+  },
+  {
+    "environment": "channel:PV_SHOESTRING",
+    "cfg": 3.0,
+    "n": 128,
+    "dntg": 0.007023930549621582,
+    "gamma_z_plateau_dev": -0.0030699427139320445,
+    "largest_frac": 0.9369719526885518,
+    "ref_largest_frac": 0.9129133366633019,
+    "dlargest_frac": 0.024058616025249946,
+    "comp_freq": 0.3046875,
+    "comp_freq_ref": 0.2734375
+  }
+]

@@ -171,3 +171,52 @@ Prediction, reference, and mask directories are joined on `ids`.
 
 CLI: `python -m resbench.run --pred-dir A --ref-dir REF --out metrics.parquet
 [--mask-dir MASKS] [--band] [--figures]`.
+
+---
+
+# Addendum A — Conditional-entropy calibration (frozen 2026-07-26, before computation)
+
+Scored follow-up study; the §1–§8 master table is unchanged by it. Goal:
+calibrate the model's conditional voxelwise uncertainty against the data
+engine's conditional uncertainty under identical (parameters, wells).
+
+**A.1 Conditions.** Per environment, the ensemble-(b) manifest rows with
+row_index 0–3 (well configs 1/2/3/1 wells): 32 conditions total.
+
+**A.2 Model entropy field.** K = 128 conditioned samples per condition
+(Table 6 settings; per-sample noise seed = fresh_noise_seed·1000 + k).
+Voxelwise p̂ = mean sand indicator over K; H(x) = −p̂ log₂ p̂ −
+(1−p̂) log₂(1−p̂), with H = 0 at p̂ ∈ {0, 1}. H = 0 at well voxels holds by
+construction (hard replacement); it is stated, not evidence of calibration.
+
+**A.3 Reference far-field entropy.** For each condition's parameter vector:
+N = 512 unconditional engine realizations (same `create_geology` kwargs,
+seeds drawn from a logged rng), validated by first reproducing stored
+dataset instances bit-exactly from (params, seed). Voxelwise entropy of
+that ensemble is the *unconditional-under-parameters* level; beyond the
+wells' correlation range the model's conditional entropy must converge to
+it. If measured engine cost makes 512 infeasible, N may be lowered
+(never below 128) with the actual N logged per condition.
+
+**A.4 Reference near-field entropy (rejection, feasibility-gated).**
+Acceptance = an unconditional realization matching ALL conditioning well
+voxels exactly. Acceptance rates are measured on the A.3 draws (no extra
+cost), and CPU cost to reach 200 accepted realizations per condition is
+projected from the measured per-realization time. Rejection proceeds only
+where projected cost is reasonable (1-well configs prioritized); elsewhere
+the study reports far-field-only calibration and says so.
+
+**A.5 Metrics.** Voxels binned by Chebyshev distance to the nearest well
+voxel (bin width 2, up to 24). Deliverables per environment: mean-entropy
+vs distance curves (model; rejection reference where available;
+unconditional level as asymptote), one side-by-side voxelwise entropy-map
+figure for a representative condition, scalar calibration error
+mean |H_model − H_ref| per bin, the distance beyond which the model curve
+is within the A.3 split-half band of the reference level, and an explicit
+flag when H_model < H_ref (under-dispersion — the direction that matters
+for uncertainty quantification).
+
+**A.6 Out of protocol.** Items run as *post-hoc analyses* (geobody-W1
+minimum-size sensitivity, per-volume compartmentalization table, CFG
+sweep) are presentation/diagnostics: clearly labeled, never a re-scoring
+of the master table.
