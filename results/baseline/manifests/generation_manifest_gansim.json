@@ -1,0 +1,11 @@
+{
+  "ensemble": "gansim3d_v2_unconditional (Addendum D.5 row 1)",
+  "snapshot": "/scratch/08405/ilgar/ResBaselines/train_results/000-gansim_pv_64x64x32_paper_sched/network-snapshot-002720.pkl",
+  "snapshot_md5": "0f79097a2026cccc7de17d4a2b3202fc",
+  "latent_seed": 20260806,
+  "binarization": "soft-argmax output > 0.5",
+  "id_assignment": "reference ids in generation order (nominal, join-only)",
+  "mean_ntg": 0.2235245555639267,
+  "wall_s": 5.5,
+  "n": 512
+}

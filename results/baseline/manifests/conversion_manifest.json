@@ -1,0 +1,45 @@
+{
+  "index": "/scratch/08405/ilgar/ResBaselines/train_index.npz",
+  "n_volumes": 90000,
+  "shuffle_seed": 123,
+  "shape": [
+    64,
+    64,
+    32
+  ],
+  "lod_shapes": [
+    [
+      64,
+      64,
+      32
+    ],
+    [
+      32,
+      32,
+      16
+    ],
+    [
+      16,
+      16,
+      8
+    ],
+    [
+      8,
+      8,
+      4
+    ],
+    [
+      4,
+      4,
+      4
+    ]
+  ],
+  "files": [
+    "TrainingData-1r02.tfrecords",
+    "TrainingData-1r03.tfrecords",
+    "TrainingData-1r04.tfrecords",
+    "TrainingData-1r05.tfrecords",
+    "TrainingData-1r06.tfrecords"
+  ],
+  "bytes": 13509810000
+}

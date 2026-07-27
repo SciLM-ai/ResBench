@@ -1,0 +1,11 @@
+{
+  "phase": "3-training",
+  "launched_utc": "2026-07-27T14:27:18Z",
+  "node": "c622-042.vista.tacc.utexas.edu (idev job 867834, ~29h remaining at launch)",
+  "resbaselines_commit": "2f8c13dd1d3004557107d8f9fcb3ad52262b477b",
+  "config": "train_gansim/config.py (Addendum D.3: paper schedule, total_kimg 3600, seed 8001)",
+  "data": "/scratch/08405/ilgar/ResBaselines/train_data/TrainingData (90000 vols, 13509810000 bytes, VERIFY OK)",
+  "container_sif": "/scratch/08405/ilgar/containers/tf2-25.02-arm64.sif",
+  "log": "train_gansim/train.log",
+  "result_dir": "/scratch/08405/ilgar/ResBaselines/train_results/"
+}

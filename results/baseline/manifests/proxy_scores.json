@@ -1,0 +1,127 @@
+{
+  "rule": "abs_dntg + variogram_mae/sill, 64 gen vols vs train-split-512 (rng 20260805); latent seed 9000+kimg; min proxy, tie->later kimg",
+  "ref_ntg": 0.2239685207605362,
+  "ref_sill": 0.17380662246887346,
+  "snapshots": [
+    {
+      "kimg": 2560,
+      "snapshot": "network-snapshot-002560.pkl",
+      "abs_dntg": 0.0016906112432479858,
+      "variogram_mae_sill": 0.020749748784101327,
+      "proxy": 0.022440360027349313,
+      "gen_mean_ntg": 0.22565913200378418
+    },
+    {
+      "kimg": 2640,
+      "snapshot": "network-snapshot-002640.pkl",
+      "abs_dntg": 0.012306824326515198,
+      "variogram_mae_sill": 0.024983224735524077,
+      "proxy": 0.037290049062039275,
+      "gen_mean_ntg": 0.211661696434021
+    },
+    {
+      "kimg": 2720,
+      "snapshot": "network-snapshot-002720.pkl",
+      "abs_dntg": 0.005655661225318909,
+      "variogram_mae_sill": 0.009225708501098152,
+      "proxy": 0.01488136972641706,
+      "gen_mean_ntg": 0.21831285953521729
+    },
+    {
+      "kimg": 2800,
+      "snapshot": "network-snapshot-002800.pkl",
+      "abs_dntg": 0.012318745255470276,
+      "variogram_mae_sill": 0.02416405442833254,
+      "proxy": 0.036482799683802816,
+      "gen_mean_ntg": 0.21164977550506592
+    },
+    {
+      "kimg": 2880,
+      "snapshot": "network-snapshot-002880.pkl",
+      "abs_dntg": 0.006128773093223572,
+      "variogram_mae_sill": 0.026623987866786398,
+      "proxy": 0.032752760960009966,
+      "gen_mean_ntg": 0.23009729385375977
+    },
+    {
+      "kimg": 2960,
+      "snapshot": "network-snapshot-002960.pkl",
+      "abs_dntg": 0.0013848692178726196,
+      "variogram_mae_sill": 0.017146720201239793,
+      "proxy": 0.018531589419112413,
+      "gen_mean_ntg": 0.22258365154266357
+    },
+    {
+      "kimg": 3040,
+      "snapshot": "network-snapshot-003040.pkl",
+      "abs_dntg": 0.02377675473690033,
+      "variogram_mae_sill": 0.058107222038443505,
+      "proxy": 0.08188397677534384,
+      "gen_mean_ntg": 0.24774527549743652
+    },
+    {
+      "kimg": 3120,
+      "snapshot": "network-snapshot-003120.pkl",
+      "abs_dntg": 0.012855395674705505,
+      "variogram_mae_sill": 0.0164695903115279,
+      "proxy": 0.029324985986233405,
+      "gen_mean_ntg": 0.2368239164352417
+    },
+    {
+      "kimg": 3200,
+      "snapshot": "network-snapshot-003200.pkl",
+      "abs_dntg": 0.007867559790611267,
+      "variogram_mae_sill": 0.029744940841496648,
+      "proxy": 0.037612500632107915,
+      "gen_mean_ntg": 0.23183608055114746
+    },
+    {
+      "kimg": 3280,
+      "snapshot": "network-snapshot-003280.pkl",
+      "abs_dntg": 0.004728302359580994,
+      "variogram_mae_sill": 0.028391803943608806,
+      "proxy": 0.0331201063031898,
+      "gen_mean_ntg": 0.2286968231201172
+    },
+    {
+      "kimg": 3360,
+      "snapshot": "network-snapshot-003360.pkl",
+      "abs_dntg": 0.004961118102073669,
+      "variogram_mae_sill": 0.026621907464904927,
+      "proxy": 0.0315830255669786,
+      "gen_mean_ntg": 0.22892963886260986
+    },
+    {
+      "kimg": 3440,
+      "snapshot": "network-snapshot-003440.pkl",
+      "abs_dntg": 0.010502591729164124,
+      "variogram_mae_sill": 0.020945164670420142,
+      "proxy": 0.03144775639958426,
+      "gen_mean_ntg": 0.21346592903137207
+    },
+    {
+      "kimg": 3520,
+      "snapshot": "network-snapshot-003520.pkl",
+      "abs_dntg": 0.0017846673727035522,
+      "variogram_mae_sill": 0.02010829203884947,
+      "proxy": 0.02189295941155302,
+      "gen_mean_ntg": 0.22575318813323975
+    },
+    {
+      "kimg": 3600,
+      "snapshot": "network-snapshot-003600.pkl",
+      "abs_dntg": 0.00018621981143951416,
+      "variogram_mae_sill": 0.016862357240192107,
+      "proxy": 0.01704857705163162,
+      "gen_mean_ntg": 0.22378230094909668
+    }
+  ],
+  "selected": {
+    "kimg": 2720,
+    "snapshot": "network-snapshot-002720.pkl",
+    "abs_dntg": 0.005655661225318909,
+    "variogram_mae_sill": 0.009225708501098152,
+    "proxy": 0.01488136972641706,
+    "gen_mean_ntg": 0.21831285953521729
+  }
+}

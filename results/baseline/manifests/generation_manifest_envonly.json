@@ -1,0 +1,15 @@
+{
+  "ensemble": "resflow_envonly_marginalized (Addendum D.5 row 2)",
+  "param_seed": 20260807,
+  "noise_seed_rule": "20260808000 + k",
+  "n_steps": 50,
+  "cfg_scale": 3.0,
+  "binarization": "x > 0",
+  "ckpt": "/work/08405/ilgar/vista/genflows_runs_backup_ls6/reservoirs_inpainting/checkpoints/flow_matching.pt",
+  "ckpt_md5": "759a047f0ea609b9e0c1926aaf55fbf1",
+  "id_assignment": "reference ids in generation order (nominal, join-only)",
+  "mean_ntg": 0.23653270304203033,
+  "wall_s": 122.6,
+  "torch": "2.10.0+cu126",
+  "device": "cuda"
+}

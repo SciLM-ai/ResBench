@@ -1,0 +1,23 @@
+{
+  "phase": "0-probe",
+  "date": "2026-07-27",
+  "purpose": "GH200 feasibility probe for GANSim3D_v2 under NGC TF2 arm64 container",
+  "hosts": {"build": "c608-061.vista.tacc.utexas.edu", "train_gen": "c622-042.vista.tacc.utexas.edu (idev job 867834 node; c608-061 GPU had ~88GB ghost allocation + active sibling workstream)"},
+  "gpu": "NVIDIA GH200 120GB, driver 590.48.01",
+  "container": {"ref": "docker://nvcr.io/nvidia/tensorflow:25.02-tf2-py3 (arm64)", "sif": "/scratch/08405/ilgar/containers/tf2-25.02-arm64.sif", "sif_sha256": "e1b249faf30be154233ced7108b0d42a1f0ba96a2fa10f016d1adb17b0b15d55"},
+  "stack": {"python": "3.12.3", "tensorflow": "2.17.0", "numpy": "1.26.4", "pillow": "12.3.0 (pip --user)", "apptainer": "tacc-apptainer/1.4.1"},
+  "code": {"repo": "https://github.com/SuihongSong/GANSim3D_v2", "commit": "02677daf28fa7ef6640f909b08be4dbe61f5bcdc", "run_dirs": "probe/run_grow, probe/run_fullres (verbatim copies of vendor Codes/ + logged shims below)"},
+  "port_shims": [
+    "imp.py stub providing new_module (stdlib imp removed in Python 3.12; used only by tfutil pkl reload)",
+    "pip install --user pillow (absent from NGC 25.02 image)",
+    "dataset.py L135: int() cast on bytes_per_item (TF 2.17 rejects numpy ints in tf.data buffer sizes)",
+    "generation scripts only: tfutil.is_tf_expression widened to accept TF2 ResourceVariable (reload path per authors' notebook mode, i.e. without disable_v2_behavior; authors' __setstate__ strips '.value' from embedded source)"
+  ],
+  "probe_data": {"index": "/scratch/08405/ilgar/ResBaselines/probe_index.npz (first 512 PV_SHOESTRING train-split rows)", "tfrecords_bytes": 76855808, "roundtrip_verify": "10 volumes bit-exact across 5 lods", "lod_shapes": [[64,64,32],[32,32,16],[16,16,8],[8,8,4],[4,4,4]]},
+  "seeds": {"config.random_seed": 8001, "tfrecord_shuffle": 123, "gen_test_np": 1234},
+  "training_probe": {"schedule": "lod train/trans 2 kimg each, total 18 kimg, minibatch {4:64,8:64,16:64,32:32,64:16}", "result": "exit 0, all lods 4->0 traversed, snapshots + fakes written", "wall_s": 90,
+    "sec_per_kimg": {"lod4_res4": 1.4, "lod3_res8": 0.5, "lod2_res16": 0.8, "lod1_res32_mb32": 3.6, "lod0_res64x64x32_mb16": 16.3}},
+  "generation_probe": {"snapshot": "network-snapshot-000018.pkl", "n": 8, "output": "(8,1,64,64,32) float32 in [0,1], binarized >0.5 to int8 {0,1}", "result": "GEN_TEST OK"},
+  "budget_projection": {"paper_schedule_kimg": 3600, "growth_0_to_2560_kimg_h": "~4", "fullres_2560_to_3600_kimg_h": "~4.7", "total_gh200_h": "~9 (single GPU), vs 48 GPU-h ceiling"},
+  "gpu_hours_spent_probe": "< 0.1"
+}
