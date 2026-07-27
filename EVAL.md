@@ -461,3 +461,146 @@ hands-on effort from first launch attempt (environment/container issues
 included; the completed feasibility probe makes this unlikely), or (b)
 training fails twice under the divergence rule in D.3. Both baselines are
 pre-registered here so a switch is not post-hoc.
+
+# Addendum E — Foundation vs specialist protocol (frozen 2026-07-27, before specialist training)
+
+Pre-registers the direct test of the foundation-model claim requested by
+the Area Chair and reviewer jfkD: does one shared-weights model trained on
+all 8 environments match dedicated per-environment specialists? The frozen
+protocol above (§1–§8) is unchanged; specialists are scored by the same
+`resbench.run` CLI with no harness modification. Design principle: a
+specialist differs from the foundation model in exactly one way — its
+training set is restricted to one environment's training split.
+
+## E.1 Scope and environments
+
+- Wave 1 (this addendum): `channel:PV_SHOESTRING` — the foundation
+  model's weakest master-table environment (2 of 5 banded cells
+  `outside`), the adversarial pick; and `lobe` — the only multi-body
+  environment, the discriminating one for connectivity metrics. Wave 2
+  (`delta`, `channel:SH_DISTAL`) is planned for camera-ready if resources
+  allow and is not part of this freeze.
+- Distribution-level comparison only (ensemble-(a)-style columns).
+  Well-conditioned generation is out of scope for specialists: exactitude
+  is guaranteed by the hard-replacement pipeline (§ masking,
+  `apply_inpaint_output`) independent of model weights, so it cannot
+  discriminate foundation from specialist. The `well mismatch %` column
+  is n/a for specialist rows, footnoted to this section.
+
+## E.2 Specialist training configuration (single-difference, pre-registered)
+
+The foundation reference run is `examples/reservoirs/inpainting/train.py`
+via `run_A100.sh` (LS6 Slurm job 3135586, completed 2026-04-30/05-01;
+checkpoints in `genflows_runs_backup_ls6/reservoirs_inpainting/`). Its
+resolved configuration, recovered from code + job log, and the specialist
+configuration next to it:
+
+| quantity | foundation (resolved) | specialist (pre-registered) |
+|---|---|---|
+| training data | full train split, 900,000 volumes | one environment's train split only: PV 90,000 / lobe 180,000 (`Subset` over the loader's `layer_idx`; no other loader change) |
+| architecture | UNet3D `in=3, out=1`, 18-D cond, GroupNorm, 5.37 M params | identical; environment one-hot stays in the model, fed as a constant |
+| cond normalization | `cont_min/cont_max` over the full train split (`cond_stats.npz`) | foundation `cond_stats.npz` reused verbatim (bit-identical conditioning surface; subset-derived stats would differ and can be all-NaN in family columns) |
+| method / CFG | Flow Matching, `drop_prob = 0.1` (whole 18-D embedding nulled) | identical |
+| mask distribution | 30% empty / 70% 1–5 straight wells | identical |
+| epochs | 40 | 40 over the environment subset (matched per-sample exposure; 1/10 resp. 1/5 of foundation compute) |
+| global batch | 384 (12 ranks × 32, DDP mean; `drop_last`) | 384 on 1 GPU — single batch of 384 if it fits (smoke-test-resolved), else gradient accumulation of 384 / feasible per-device batch with EMA updated once per optimizer step. GroupNorm-only architecture + mean-reduced loss make either path gradient-identical to the foundation's 12-rank DDP mean. Resolved choice logged in the run manifest. |
+| optimizer | AdamW, base lr 1e-3 × √12 (world-size rule) = 3.4641e-3 peak, default wd 0.01, grad clip 1.0 | identical, with peak lr 3.4641e-3 passed explicitly (world size 1 would otherwise skip the √-scaling; decision approved 2026-07-27) |
+| LR schedule | epoch-parametrized: 2-epoch linear warmup (start factor 0.5) → cosine `T_max = 38`, stepped once per epoch | identical in epoch space. Nothing in the foundation recipe is step-parametrized, so the "rescale absolute-step quantities" clause is vacuous — recorded here as a resolved fact. |
+| optimizer steps | 2,343/epoch; 93,720 total | PV 234/epoch (9,360 total); lobe 468/epoch (18,720 total) |
+| EMA | decay 0.9999 per optimizer step; checkpoints are EMA-applied | identical decay; shortened horizon disclosed in E.7 |
+| loader shuffle seed | 42 | 42 |
+| global torch seed | not set (model init unseeded; disclosed) | PV 8101, lobe 8102, logged |
+| checkpoint cadence | every 5 epochs + auto-resume `training_state.pt` | identical (every 5 epochs; approved 2026-07-27) |
+| platform | 4 nodes × 3 A100 (LS6), collaborator env | 1 GH200 per specialist (Vista idev, nodes c608-122 / c611-041), env `genflows` (torch 2.10.0+cu126, accelerate 1.13.0); numerics differences disclosed in E.7 |
+
+Implementation is a thin wrapper (`ResFlow_ls6/scripts/specialists/`,
+new directory): environment filter, foundation-stats reuse, explicit
+lr/seed, then the unmodified `resflow.utils.training.train_model_inpaint`
+loop (or a verbatim copy extended only with gradient accumulation if the
+384 batch does not fit — the fallback carries its own smoke-test
+equivalence check). No file under `resflow/` or `resbench/` is modified.
+
+## E.3 Validation protocol, checkpoint selection, anti-undertraining rule
+
+- Validation loss per saved checkpoint: the environment's validation
+  split only (PV 5,000 / lobe 10,000), FM velocity MSE exactly as in
+  `eval_losses.py` (K = 4 random `(t, noise)` draws per cube averaged,
+  `drop_prob = 0.1`, on-the-fly masks), with one fixed evaluation seed
+  20260901 applied identically before each checkpoint's pass so all
+  checkpoints see paired draws.
+- Selection: the scored specialist checkpoint is the argmin of validation
+  loss over the saved EMA checkpoints (`inference_epoch{005..040}.pt`).
+  The test split is never touched before final scoring.
+- Anti-undertraining rule (operational): if the argmin is epoch 40 — the
+  only saved checkpoint inside the final 10% of the 40-epoch run at the
+  5-epoch cadence — that specialist is retrained from scratch at the
+  80-epoch horizon under the identical code path (its own epoch
+  semantics: warmup `max(1, 80//20) = 4` epochs, cosine `T_max = 76`,
+  checkpoints every 5). In-place continuation is not used because the
+  cosine floor at epoch 40 (LR ≈ 0) makes it semantically broken, and the
+  restored scheduler state would cycle the LR back upward — not the
+  recipe's shape. The final checkpoint is then the argmin of validation
+  loss over the union of both runs' checkpoints. Which branch fired is
+  logged per environment in `SPECIALISTS.md`.
+
+## E.4 Generation (512 volumes per specialist)
+
+- Entry point: `scripts/rebuttal_eval/generate_ensembles.py` unchanged —
+  the same script, solver replica (`--self-test` on), and Table 6
+  settings read at run time from `paper_figures/figure2.py` (Euler,
+  NFE 50, CFG 3.0, binarization `x > 0`, empty well masks, no hard
+  replacement) that produced ensemble (a).
+- Conditioning: the same manifest rows for that environment (identical
+  parameter vectors via the same `conds.npz`; the reuse of
+  `cond_stats.npz` in E.2 keeps the vectors bit-identical to
+  ensemble (a)).
+- Fresh noise (pre-registered offset 500000): the specialist run passes a
+  manifest copy whose `fresh_noise_seed` column is the original value
+  + 500000; the unchanged script then derives torch CPU seed
+  `(fresh_noise_seed + 500000)·1000 + k`, `k = 0`.
+- Output: script-native layout and naming, int8 `.npz` with the same ids —
+  `resbench_eval/specialist_pv_shoestring/ensemble_a/channel_PV_SHOESTRING/volumes_r0000-r0511.npz`
+  and
+  `resbench_eval/specialist_lobe/ensemble_a/lobe/volumes_r0000-r0511.npz`
+  — with the script's generation manifest JSON alongside; selected
+  checkpoint md5 recorded in the run manifest.
+
+## E.5 Scoring, comparison table, parity criterion
+
+- `resbench.run` unchanged: each specialist directory against the same
+  reference directory and the same split-half band as the master table.
+- Comparison table (parquet + rendered markdown), three rows per
+  environment: split-half band; foundation — copied verbatim from the
+  master table in `RESULTS.md`; specialist. Columns identical to the
+  master table; `well mismatch %` n/a per E.1. Verdict tiers and absolute
+  values in every cell.
+- Parity criterion (pre-registered): the foundation claim is
+  substantiated on an environment iff the foundation row's verdict tier
+  (inside ≻ near ≻ outside, against the same band) is at least as good as
+  the specialist row's in every metric column. Absolute values are
+  reported alongside and compared descriptively regardless of tiers.
+
+## E.6 Secondary diagnostic (pre-registered)
+
+Does the specialist reproduce the foundation model's over-connectivity
+signature — elevated largest-body fraction, γ_z plateau undershoot, and
+under-reproduced compartmentalization tail (per-volume τ_z < 0.99
+fraction)? If yes, the bias is attributable to architecture or CFG rather
+than to weight sharing; if no, weight sharing remains a candidate cause.
+Stated in advance of any specialist score.
+
+## E.7 Disclosed caveats (inherent to the design, not corrected)
+
+- EMA horizon: decay 0.9999 implies a ~10,000-step time constant, which
+  exceeds the PV specialist's entire 9,360-step run and half the lobe
+  specialist's. Matched per-sample exposure necessarily shortens the EMA
+  horizon by the subset ratio; disclosed, not corrected.
+- The foundation run's model-init seed was not recorded (collaborator
+  run, unseeded); specialist init seeds are fixed and logged. One seed
+  per specialist — matching the single foundation run — so no seed-
+  variance band accompanies either row.
+- Hardware/software numerics differ (12× A100 DDP on LS6 vs 1× GH200 on
+  Vista, different torch builds); gradient math is equivalent per E.2.
+- Subset ratios are 1/10 (PV) and 1/5 (lobe), not the planning-language
+  "1/8"; matched exposure is defined by 40 epochs, not by a uniform
+  ratio.
