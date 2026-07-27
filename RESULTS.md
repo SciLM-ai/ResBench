@@ -338,7 +338,7 @@ penetration, thin shale breaks in delta;
 | channel:SH_DISTAL | 0.75 | 71 | 0.284 | 0.104 | outside (under-disp.) |
 | delta | 0.88 | 64 | 0.143 | 0.091 | near (under-disp.) |
 | channel:CB_LABYRINTH* | 0.75 | 25 | 0.250 | 0.219 | near (indicative) |
-| channel:SH_PROXIMAL* | 0.88 | 36 | 0.225 | 0.168 | near (indicative) |
+| channel:SH_PROXIMAL | 0.88 | 50 | 0.221 | 0.144 | near (under-disp.) |
 | channel:MEANDER_OXBOW | 0.28 | 93 | 0.202 | 0.110 | near (under-disp.) |
 | channel:CB_JIGSAW* | 0.84 | 3 | 0.372 | 0.346 | near (indicative) |
 
