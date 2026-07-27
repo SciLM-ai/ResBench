@@ -303,6 +303,54 @@ labyrinth/jigsaw > meander/delta > shoestring. Under-dispersion is a
 property of the learned family distributions themselves (no wells
 involved), not of the well-conditioning path.
 
+## Well-conditional entropy calibration in all 8 environments (EVAL.md Addendum C — scored)
+
+The near-well calibration gap of Addendum A (engine-conditional references
+in only 2 environments) is closed by **modal-pattern rejection**: carve the
+1-well column (x, y) = (32, 32) from every stored unconditional draw,
+histogram the patterns, and condition on the most frequent — every
+matching draw is an exact conditional sample, at zero extra generation
+cost beyond stored pools. Two tiers are published in
+`results/well_conditional_reference/` (per environment: accepted volumes,
+pattern, well mask, parameter pointer), so **this benchmark component
+never requires rejection again**:
+
+**Tier 1 — modal (typical) wells** (dry column in lobe/PV/meander, full
+sand elsewhere; 80–287 reference realizations per environment,
+`results/posthoc/modal_calibration.md`, figure `modal_calibration.pdf`):
+a clean **two-regime miscalibration**. Near the well (Chebyshev ≤ 6) the
+model *under-collapses* in the dry-well environments (signed offset
++0.11 lobe, +0.10 PV — it keeps too much uncertainty where the well is
+informative, i.e. under-uses well data), while sheet/delta/meander show
+mild near-well under-dispersion. Beyond ~8–12 voxels every environment
+reverts to the familiar far-field over-confidence (model below the
+engine band). MAE 0.12–0.20 bits vs bands 0.05–0.11.
+
+**Tier 2 — informative (mixed) wells** (C.5–C.7; genuinely heterogeneous
+well logs — a shoestring-channel intersection in PV, a mid-section lobe
+penetration, thin shale breaks in delta;
+`results/posthoc/mixed_calibration.md`, figure `mixed_calibration.pdf`):
+
+| environment | well NTG | n ref | MAE (bits) | band | verdict |
+|---|---|---|---|---|---|
+| lobe (re-selected) | 0.25 | 54 | 0.174 | 0.179 | inside (under-disp.) |
+| channel:PV_SHOESTRING | 0.25 | 91 | 0.179 | 0.099 | near (under-disp.) |
+| channel:SH_DISTAL | 0.75 | 71 | 0.284 | 0.104 | outside (under-disp.) |
+| delta | 0.88 | 64 | 0.143 | 0.091 | near (under-disp.) |
+| channel:CB_LABYRINTH* | 0.75 | 25 | 0.250 | 0.219 | near (indicative) |
+| channel:SH_PROXIMAL* | 0.88 | 36 | 0.225 | 0.168 | near (indicative) |
+| channel:MEANDER_OXBOW* | 0.28 | 11 | 0.226 | 0.343 | inside (indicative) |
+| channel:CB_JIGSAW* | 0.84 | 3 | 0.372 | 0.346 | near (indicative) |
+
+\* below the 50-realization floor after most-matches re-selection
+(EVAL.md C.7) — published as indicative only; bands are correspondingly
+wide. With informative wells the near-field signed offset is **negative in
+7 of 8 environments**: given a heterogeneous well log, the model is
+under-dispersed both near and far — the modal tier's near-well
+under-collapse appears specific to low-information (typical) wells.
+Every stored draw pool is published, so all sub-floor environments can be
+topped up later at engine cost only.
+
 ## Anomalies to look at before writing the rebuttal
 
 - **Systematic conditional under-dispersion (entropy calibration)** — the

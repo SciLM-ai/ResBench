@@ -314,3 +314,150 @@ output is statistically equivalent, just not reusable. CB jigsaw's mixed
 tier is reported infeasible: measured acceptance ~0.03% (probe estimate
 0.6% was 3 lucky hits in 512); reaching the 50-realization floor would
 cost ~11 engine-hours and is out of budget.
+
+**C.7 Most-matches re-selection (amended 2026-07-27, before mixed-tier
+scoring).** Small-probe pattern frequencies proved systematically
+optimistic. Final rule: mine ALL stored pools for each environment's mixed
+condition; if the frozen pattern's total matches fall below the
+50-realization floor, the pattern is re-selected as the pool-wide
+most-matched mixed pattern (ties broken by count, then lexicographic byte
+order). Frozen patterns are kept as provenance in
+`mixed_conditions.json`; re-selection is flagged per environment.
+Environments still below the floor after re-selection (labyrinth 25,
+SH proximal 36, meander-oxbow 11, jigsaw 3) are published with an
+**indicative-only** flag; their split-half bands are correspondingly wide
+and verdicts must not be quoted without the n. Sampling budget ended
+2026-07-27 ~12:20 CDT on one node (the second node was returned to the
+user mid-run).
+
+# Addendum D — Baseline protocol (frozen 2026-07-27, before baseline training)
+
+Pre-registers one published-baseline comparison for the rebuttal. Everything
+in this section is fixed before any baseline training step; the frozen
+protocol above (§1–§8) is unchanged and the baseline is scored by the same
+`resbench.run` CLI with no harness modification.
+
+## D.1 Scope and environment
+
+- Single environment: `channel:PV_SHOESTRING`. Justification: it is the
+  baseline's demonstrated domain (channelized reservoirs, per GANSim's
+  publications) and simultaneously ResFlow's weakest master-table
+  environment (2 of 5 banded cells `outside`), i.e. a conservative choice
+  for us. Distribution-level comparison only (ensemble-(a)-style columns);
+  well-conditioned baseline generation is out of scope and the
+  `well mismatch %` column is n/a for all baseline-comparison rows.
+- Baseline model: GANSim-3D (Song, Mukerji & Hou 2022, WRR,
+  doi:10.1029/2021WR031865), authors' official updated code
+  **GANSim3D_v2** (github.com/SuihongSong/GANSim3D_v2, commit `02677daf`,
+  vendored in `ResBaselines/vendor/`). The original WRR-2022 repository
+  hard-wires well/probability conditioning into the training loop with no
+  unconditional path; v2 is the same authors' same-method release whose
+  shipped default is exactly the unconditional configuration used here
+  (`cond_label = cond_well = cond_prob = False`). Four logged port shims
+  (Python 3.12 `imp` stub, Pillow install, one `int()` cast for TF 2.17
+  buffer-size type checks, one reload-path type-check widening) are
+  recorded in `ResBaselines/manifests/`; none alter training semantics.
+
+## D.2 Training data
+
+- The full PV_SHOESTRING training split: 90,000 volumes addressed by
+  `splits/train.parquet`, facies channel only, converted to GANSim
+  multi-resolution TFRecords by `ResBaselines/scripts/make_tfrecords.py`
+  (insertion shuffle seed 123, the authors' notebook constant; round-trip
+  verified bit-exact on 10 volumes). No test or validation contact at any
+  point before final scoring.
+- Grid adaptation: none required. The native grid (64, 64, 32) is
+  power-of-two per axis and matches the architecture's anisotropic growth
+  (4×4×4 → 8×8×4 → 16×16×8 → 32×32×16 → 64×64×32), verified by a probe
+  run. No padding, no cropping; ResBench only ever sees native-grid
+  volumes. (Contingency, unused: symmetric shale padding + pre-scoring
+  crop would have been used had the grid been incompatible.)
+
+## D.3 Training configuration (one shot, pre-registered)
+
+- Platform: 1× NVIDIA GH200 (TACC Vista) under apptainer image
+  `nvcr.io/nvidia/tensorflow:25.02-tf2-py3` (arm64; SIF sha256 in
+  `ResBaselines/manifests/probe_20260727.json`).
+- Schedule: the WRR-2022 paper defaults from the original repository's
+  `config.py`/training log, adapted only to the native grid's resolution
+  ladder: `lod_training_kimg = lod_transition_kimg =
+  {4:160, 8:320, 16:320, 32:480, 64:640}`; minibatch
+  `{4:32, 8:32, 16:32, 32:32, 64:16}`; G/D learning rates
+  `{4:0.0025, 8:0.005, 16:0.005, 32:0.0035, 64:0.0025}` (Adam β1=0,
+  β2=0.99); `total_kimg = 3600` (the paper run's stopping point; full
+  resolution is reached at kimg 2560). Facies codes `[0, 1]`,
+  soft-argmax β = 8e3 (v2 default), D_repeats = 1, G EMA β = 0.999.
+  Global seed 8001 (v2 default). Measured projection ≈ 9 GPU-h;
+  hard ceiling 48 GPU-h.
+- Snapshots: every tick (`tick_kimg = {4:160, 8:160, 16:240, 32:240,
+  64:80}`, original-repo defaults), i.e. a ~13-snapshot ladder across the
+  full-resolution phase.
+- No hyperparameter iteration after any score is seen. If training
+  diverges (NaN loss, or generator collapse visible as constant output in
+  snapshot previews), exactly one retry with seed 8002, logged. A second
+  failure triggers the fallback (D.7), not tuning.
+
+## D.4 Checkpoint selection (training-split proxy only)
+
+- Reference statistics: 512 training-split volumes drawn uniformly
+  without replacement with `numpy.random.default_rng(20260805)` from the
+  90,000-row training index. The test reference ensemble is never
+  consulted for selection.
+- Proxy score per snapshot, computed on 64 volumes generated from that
+  snapshot (latent seed 9000 + snapshot kimg): `|ΔNTG| +
+  variogram MAE / (p̄(1−p̄))`, both computed exactly as in §4/§5 but
+  against the training-split reference sample above. Lowest score wins;
+  ties break to the later snapshot. Only full-resolution snapshots
+  (kimg ≥ 2560) are eligible.
+- Binarization everywhere (proxy and scoring, identically): the
+  generator's soft-argmax output lies in [0, 1]; facies = output > 0.5 —
+  the midpoint of the output range, equivalent to arg-max over the two
+  facies channels and to the original repository's published rule
+  (`np.where(out < 0, −1, 1)` on its [−1, 1] range).
+
+## D.5 Scored ensembles (512 volumes each, PV_SHOESTRING)
+
+1. **GANSim-3D unconditional**: 512 volumes from the selected checkpoint,
+   latent seed 20260806, binarized per D.4, saved int8 (64, 64, 32).
+2. **ResFlow environment-only (marginalized)**: ResFlow has no per-field
+   null token (CFG dropout nulls the entire 18-D conditioning embedding),
+   so "environment-only" is implemented as marginalization: for each of
+   512 samples, a parameter vector is drawn uniformly with replacement
+   from the 90,000 PV_SHOESTRING *training-split* rows
+   (`default_rng(20260807)`), environment one-hot fixed, empty well mask,
+   Table 6 inference settings (Euler, NFE 50, CFG 3.0, `x > 0`), fresh
+   noise seeds `20260808*1000 + k`. This is the like-for-like partner for
+   row 1: both models produce "a random plausible PV_SHOESTRING volume"
+   with no per-instance information.
+3. **ResFlow parameter-conditioned**: the frozen master-table row copied
+   verbatim, labeled as conditioning on per-instance parameters (an
+   advantage rows 1–2 do not have). Not re-generated, not re-scored.
+- Scoring join: `resbench.run` aligns predictions to reference by
+  instance id. Rows 1–2 have no per-instance correspondence, so generated
+  volumes are assigned the 512 reference ids in generation order,
+  nominally, purely to satisfy the join; every compared metric is
+  ensemble-level. Comparison verdicts use the same split-half band as the
+  master table.
+
+## D.6 Budget
+
+- GANSim-3D: paper-default schedule above; measured probe throughput
+  16.3 s/kimg at full resolution projects ≈ 9 GPU-h; hard ceiling 48
+  GPU-h. If the ceiling interrupts training, the snapshot ladder up to
+  that point feeds D.4 unchanged.
+- Fallback DDPM (if triggered): ≈ 20 GPU-h, capacity-matched to one
+  per-environment share of ResFlow's training compute (166 GPU-h / 8
+  environments); reuses the ResFlow UNet3D backbone (5.37 M parameters,
+  `in_channels = out_channels = 1`) with `resflow/methods/diffusion.py`,
+  unconditional, trained from scratch on the same TFRecords-equivalent
+  split with the same D.4 proxy rule and the same binarization
+  discipline.
+
+## D.7 Fallback trigger (pre-registered)
+
+Switch to the DDPM fallback and record the reason if either: (a) the
+GANSim-3D code is not training successfully within 1 calendar day of
+hands-on effort from first launch attempt (environment/container issues
+included; the completed feasibility probe makes this unlikely), or (b)
+training fails twice under the divergence rule in D.3. Both baselines are
+pre-registered here so a switch is not post-hoc.
