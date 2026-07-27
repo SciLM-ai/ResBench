@@ -253,3 +253,64 @@ Negative signed offset flags under-dispersion.
 **B.5 Reporting.** One benchmark table (8 environment rows + pooled).
 The §5 master table remains unchanged; this is an additional scored
 component of the benchmark.
+
+---
+
+# Addendum C — Well-conditional entropy reference via modal-pattern rejection (frozen 2026-07-27, before computation)
+
+Extends the near-well calibration reference to **all 8 environments** by
+conditioning on the *modal* well pattern instead of a pre-specified one:
+carve the well column from every unconditional engine draw, histogram the
+binary patterns, and condition on the most frequent. All draws showing that
+pattern are exact samples of P(volume | parameters, well data); acceptance
+is maximal by construction. The accepted ensembles are published so the
+benchmark never needs rejection again.
+
+**C.1 Well geometry.** One vertical full-depth well at (x, y) = (32, 32)
+(the paper's 1-well config), pattern length 32.
+
+**C.2 Condition selection (deterministic).** Per environment, the
+(parameter-vector) condition whose modal pattern count over all
+pre-existing unconditional draws (A.3's N = 512 × 4 and B.2's N = 256 × 8)
+is largest. Selected conditions and patterns are recorded in
+`modal_conditions.json`. Known trade-off, stated: the modal pattern is a
+*typical* (high-likelihood, low-information) well — all-shale "dry well"
+in low-NTG environments, all-sand column in sheet-like ones; rare
+informative patterns are out of scope.
+
+**C.3 Reference ensemble.** Existing accepted draws + top-up rejection
+(seed base 20260803, chunked rng as in A.4) until 200 accepted or the
+per-environment draw cap (12,000) is reached; minimum publishable size 50.
+Published asset: accepted volumes (int8), the pattern, the well voxels,
+and the parameter pointer, per environment.
+
+**C.4 Model ensembles & metric.** K = 128 model samples conditioned on
+(parameters, the modal pattern as well data) with Table 6 settings, noise
+seed = fresh_noise_seed·1000 + 500 + k (offset avoids reuse of A/B
+streams). Metrics as A.5 (entropy vs Chebyshev distance to the well, mean
+|H_model − H_ref| per bin, near-field under-dispersion flag), with the
+engine ensemble split-half band (rng [20260804, env_index]) as yardstick.
+
+**C.5 Informative-pattern tier (mixed wells).** The modal pattern is
+typically all-shale or all-sand (C.2 trade-off). A second tier conditions
+on the most frequent *mixed* pattern — the modal pattern among draws with
+**≥ 4 voxels of each facies** in the well column — selected by the same
+deterministic rule over the same pre-existing draws
+(`mixed_conditions.json`; e.g. a real shoestring-channel intersection in
+PV, thin shale breaks in delta). Model ensembles as C.4 with noise-seed
+offset 700. Both tiers are published and reported side by side.
+
+**C.6 Top-up method (amended 2026-07-27, before mixed-tier computation).**
+Mixed-tier top-ups do NOT use discard-mode rejection: new unconditional
+draws are generated and **stored in full** (seed base 20260806, N per the
+per-environment draw budgets), then the conditional ensembles are
+assembled by dictionary-mining the pooled draws (pre-existing A.3/B.2
+ensembles + stored top-up pools) for the frozen pattern. Same engine cost,
+but every draw remains reusable (several environments share one parameter
+vector between the modal and mixed tiers, and the pools extend the
+unconditional references). The modal tier's top-ups (completed earlier)
+used discard-mode rejection with seed base 20260803; its accepted-only
+output is statistically equivalent, just not reusable. CB jigsaw's mixed
+tier is reported infeasible: measured acceptance ~0.03% (probe estimate
+0.6% was 3 lucky hits in 512); reaching the 50-realization floor would
+cost ~11 engine-hours and is out of budget.
