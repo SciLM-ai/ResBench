@@ -339,7 +339,7 @@ penetration, thin shale breaks in delta;
 | delta | 0.88 | 64 | 0.143 | 0.091 | near (under-disp.) |
 | channel:CB_LABYRINTH* | 0.75 | 25 | 0.250 | 0.219 | near (indicative) |
 | channel:SH_PROXIMAL* | 0.88 | 36 | 0.225 | 0.168 | near (indicative) |
-| channel:MEANDER_OXBOW* | 0.28 | 11 | 0.226 | 0.343 | inside (indicative) |
+| channel:MEANDER_OXBOW | 0.28 | 93 | 0.202 | 0.110 | near (under-disp.) |
 | channel:CB_JIGSAW* | 0.84 | 3 | 0.372 | 0.346 | near (indicative) |
 
 \* below the 50-realization floor after most-matches re-selection
@@ -349,7 +349,12 @@ wide. With informative wells the near-field signed offset is **negative in
 under-dispersed both near and far — the modal tier's near-well
 under-collapse appears specific to low-information (typical) wells.
 Every stored draw pool is published, so all sub-floor environments can be
-topped up later at engine cost only.
+topped up later at engine cost only — demonstrated 2026-07-27 by
+meander-oxbow: a 5,000-draw top-up pool raised its frozen top-story well
+(NTG 0.28; meander stories snap to 8-voxel blocks) from 11 to **93**
+conditional realizations, promoting it to the fully published set
+(now 5 of 8 environments; labyrinth 25, SH proximal 36, jigsaw 3 remain
+indicative).
 
 ## Anomalies to look at before writing the rebuttal
 
