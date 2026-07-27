@@ -219,8 +219,69 @@ lobe + channel:PV_SHOESTRING, 128 samples per point at CFG {1.0, 1.5, 2.0,
   directional conclusions above exceed that, per-cell values are noisier
   than the master table's.
 
+## Conditional-entropy calibration (EVAL.md Addendum A — scored)
+
+Design per Addendum A: 32 conditions (8 envs × 4 ensemble-(b) rows covering
+1/2/3-well configs); model entropy from K = 128 conditioned samples per
+condition; reference from N = 512 unconditional-under-parameters ResMill
+realizations per condition (engine reproduction validated **bit-exact**
+against stored dataset instances in all 8 environments before generation).
+H = 0 at well voxels holds by construction (hard replacement) and is
+asserted, not counted as calibration evidence. Full per-condition table:
+`results/posthoc/entropy_calibration.md`; figures
+`entropy_vs_distance.{pdf,png}`, `entropy_maps.{pdf,png}`.
+
+**Rejection feasibility (A.4).** Acceptance measured on the 512 draws per
+condition: only two conditions are tractable — SH distal r0 1-well (4.1%)
+and SH proximal r3 1-well (2.0%). Targeted rejection delivered **203
+accepted / 6,656 draws** and **175 / 12,000 (draw-capped)** respectively.
+All other conditions: 0/512 accepted (rate < 0.6% at 95% confidence);
+with measured engine costs of 1.6–94 s/realization, reaching 200 accepted
+projects to hundreds of core-hours or worse (e.g. CB labyrinth 1-well:
+0.2% → ~450 core-h) — those conditions get far-field-only calibration, as
+the protocol provides.
+
+**Far field (the headline).** Mean model-minus-unconditional entropy
+offset in bins at Chebyshev distance ≥ 15 (split-half band of the
+reference level in parentheses):
+
+| lobe | PV shoe. | CB lab. | CB jig. | SH dist. | SH prox. | m-oxbow | delta |
+|---|---|---|---|---|---|---|---|
+| **−0.02 (0.04)** | −0.12 (0.04) | −0.18 (0.03) | −0.15 (0.04) | −0.20 (0.03) | −0.21 (0.05) | −0.17 (0.03) | −0.15 (0.04) |
+
+**Lobe is calibrated** (inside its band; per-condition convergence
+distances 3–19 voxels). **All seven channel/delta environments are
+systematically under-dispersed**: conditional entropy sits 0.12–0.21 bits
+below the engine's own uncertainty level even far from wells (3–6× the
+band), so the model curve never enters the reference band (conv. distance
+> 24). This is the miscalibration direction that matters for UQ — the
+model is over-confident about voxels the wells say nothing about — and it
+is the entropy-space image of the over-smoothing/over-connection signature
+(both survive at CFG 1.0).
+
+**Near field (where a rejection reference exists).** Mean |H_model −
+H_ref| binned by distance: 0.097 bits (SH distal, n = 203) and 0.120 bits
+(SH proximal, n = 175); both flagged **under-dispersed** in the near-field
+bins as well. The entropy-map figure (SH distal, 1-well) shows the
+mechanism: both fields correctly close the uncertainty funnel at the well,
+but ResFlow prints large confident (near-zero-entropy) regions between its
+uncertainty bands where the engine keeps broad ~0.8-bit uncertainty.
+
+Estimator caveats (small vs the effect): plug-in entropy bias is ≈ −0.006
+bits at K = 128, ≈ −0.004 at n ≈ 200, and the near-field reference exists
+only for 1-well configs in two sheet environments.
+
 ## Anomalies to look at before writing the rebuttal
 
+- **Systematic conditional under-dispersion (entropy calibration)** — the
+  strongest new finding: in all seven channel/delta environments the
+  model's conditional voxelwise entropy runs 0.12–0.21 bits below the
+  engine's true uncertainty at all distances from wells (3–6× the
+  reference noise band); lobe is calibrated (−0.02). Confirmed near-field
+  by rejection references in both tractable conditions (0.10–0.12 bits,
+  under-dispersed). Any downstream use of ResFlow ensembles for
+  uncertainty quantification in the channel/delta families will
+  understate uncertainty by roughly that margin.
 - **SH distal geobody W1 = 0.97 (7× band)**: an excess population of small
   fragments (5.2 vs 2.6 bodies/volume; 50% vs 30% singletons) around a
   correctly reproduced giant sheet (max size, p90, |Δ largest frac| =
