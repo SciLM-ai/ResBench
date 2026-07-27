@@ -75,6 +75,68 @@ sampling pipeline is verified end to end, and the audit confirms masks,
 carved well values, and generated volumes stay aligned through the whole
 harness.
 
+## Supplementary connectivity diagnostics (post-hoc, reference ensemble)
+
+Checks run after the frozen-protocol scoring to interpret the τ(h) and
+geobody columns; they do not alter the master table.
+
+**How τ(h) aggregates.** The plotted/scored curve is the *pooled* ratio
+(Σ same-body pairs ÷ Σ both-sand pairs over all 512 volumes), so it is
+pair-count-weighted: low-NTG fragmented volumes contribute fewer sand pairs
+and are down-weighted. τ ≈ 1 therefore means "one body holds nearly all the
+sand *mass*", not "there is one body": pair counts scale ~quadratically
+with body size, so speck populations are invisible to τ.
+
+**Body-mass structure per environment** (medians over 128 reference
+volumes; "big" = ≥1,000 voxels):
+
+| environment | bodies/vol | big/vol | largest body % of sand | top-3 % |
+|---|---|---|---|---|
+| lobe | 56 | **8** | **31%** | 60% |
+| channel:PV_SHOESTRING | 39 | 1 | 99% | 100% |
+| channel:CB_LABYRINTH | 58 | 1 | 100% | 100% |
+| channel:CB_JIGSAW | 120 | 1 | 99% | 100% |
+| channel:SH_DISTAL | 1 | 1 | 100% | 100% |
+| channel:SH_PROXIMAL | 27 | 1 | 100% | 100% |
+| channel:MEANDER_OXBOW | 78 | 1 | 100% | 100% |
+| delta | 33 | 1 | 100% | 100% |
+
+Seven of eight environments carry a single dominant sand network plus a
+cloud of small fragments; **lobe is the only multi-body environment**
+(~8 comparable bodies), which is why it is the only panel where τ(h)
+decays and the most discriminating environment for connectivity.
+
+**Connectivity is structural, not a sand-fraction artifact.** A real
+PV-shoestring volume at NTG 0.309 has 26 bodies with the largest holding
+99.1% of sand; the same number of sand voxels placed at random shatters
+into 7,577 bodies with the largest holding 5.2% (random site percolation
+at p = 0.31 < p_c ≈ 0.312 does not percolate under 6-connectivity).
+Long channel bodies crossing anywhere merge into one spanning network.
+
+**Vertical (z) connection is usually indirect and not universal**
+(per-volume, all 512 reference volumes):
+
+- PV shoestring: 147/512 volumes (29%) have per-volume τ_z < 0.99
+  (minimum 0.41 with largest-body fraction 0.27 — genuinely
+  compartmentalized, isolated shoestrings in mud); 379/512 (74%) have a
+  single body spanning floor to surface. Ensemble mean largest-fraction
+  0.90 vs median 0.99 — a compartmentalization tail the pooled τ curve
+  down-weights. Delta shows a smaller tail (mean 0.91 vs median ~1.0).
+- Multi-storey meander-oxbow: 506/512 span floor-to-surface, 14/512 with
+  τ_z < 0.99 — vertical amalgamation by construction.
+- "Connected along z" in τ_z routes through lateral amalgamation points,
+  not necessarily continuous vertical sand columns.
+
+**Rebuttal-relevant reading.** The discriminating connectivity targets in
+this benchmark are (i) lobe body-scale separation and (ii) the
+PV-shoestring/delta compartmentalization tails — and ResFlow's one
+systematic bias (largest-fraction 0.90 → 0.95 PV, 0.96 → 0.98 labyrinth,
+lobe τ above reference) sits exactly there: slight over-merging in the
+environments where merging is the live geological variable. A per-volume
+compartmentalization-frequency comparison (reference vs ResFlow) would
+quantify this and is a natural supplementary table if reviewers press on
+connectivity.
+
 ## Anomalies to look at before writing the rebuttal
 
 - **SH distal geobody W1 = 0.97 (7× band)** is *speck debris*, not missing
