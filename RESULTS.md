@@ -271,6 +271,38 @@ Estimator caveats (small vs the effect): plug-in entropy bias is ≈ −0.006
 bits at K = 128, ≈ −0.004 at n ≈ 200, and the near-field reference exists
 only for 1-well configs in two sheet environments.
 
+## Unconditional entropy-calibration benchmark (EVAL.md Addendum B — scored)
+
+Well-free generalization of the calibration study into a reusable
+benchmark component: 8 fresh manifest conditions per environment
+(rows 4–11, disjoint from Addendum A), model K = 128 empty-mask samples vs
+engine N = 256 unconditional realizations per condition, compared over all
+voxels. The engine reference (per-condition voxelwise p̂, float16) is
+**published in `results/entropy_reference/`** so future models can be
+scored on this component without running ResMill. Full table:
+`results/posthoc/uncond_calibration.md`; per-condition strip plot
+`uncond_calibration.{pdf,png}`.
+
+| environment | signed offset (bits) ± 95% CI | MAE ± CI | band | verdict |
+|---|---|---|---|---|
+| lobe | −0.0205 ± 0.0261 | 0.0580 ± 0.0441 | 0.0433 | near |
+| channel:PV_SHOESTRING | −0.0550 ± 0.0335 | 0.1091 ± 0.0135 | 0.0734 | near |
+| channel:CB_LABYRINTH | −0.1156 ± 0.0405 | 0.1421 ± 0.0331 | 0.0621 | outside |
+| channel:CB_JIGSAW | −0.1479 ± 0.0370 | 0.1602 ± 0.0342 | 0.0589 | outside |
+| channel:SH_DISTAL | −0.1989 ± 0.0425 | 0.2196 ± 0.0397 | 0.0619 | outside |
+| channel:SH_PROXIMAL | −0.1932 ± 0.0440 | 0.2209 ± 0.0446 | 0.0642 | outside |
+| channel:MEANDER_OXBOW | −0.1017 ± 0.0499 | 0.1342 ± 0.0361 | 0.0516 | outside |
+| delta | −0.1015 ± 0.0230 | 0.1253 ± 0.0118 | 0.0511 | outside |
+| **pooled (64 conds)** | −0.1168 | 0.1462 | 0.0583 | outside |
+
+This independently confirms Addendum A on fresh parameter vectors with
+condition-level CIs: **lobe's signed offset includes zero (calibrated)**;
+all 56 channel/delta conditions are individually negative, environment
+means −0.06 to −0.20 bits with CIs excluding zero, ordered sheets >
+labyrinth/jigsaw > meander/delta > shoestring. Under-dispersion is a
+property of the learned family distributions themselves (no wells
+involved), not of the well-conditioning path.
+
 ## Anomalies to look at before writing the rebuttal
 
 - **Systematic conditional under-dispersion (entropy calibration)** — the

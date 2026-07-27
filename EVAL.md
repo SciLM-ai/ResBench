@@ -220,3 +220,36 @@ for uncertainty quantification).
 minimum-size sensitivity, per-volume compartmentalization table, CFG
 sweep) are presentation/diagnostics: clearly labeled, never a re-scoring
 of the master table.
+
+---
+
+# Addendum B — Unconditional entropy-calibration benchmark component (frozen 2026-07-27, before computation)
+
+Promotes far-field calibration into a reusable, well-free benchmark
+component. The engine reference fields are published with ResBench so
+future models are scored without running the data engine.
+
+**B.1 Conditions.** Manifest rows with row_index 4–11 per environment
+(disjoint from Addendum A's rows 0–3): 64 conditions, parameter vectors
+from the frozen manifest.
+
+**B.2 Reference.** N = 256 unconditional engine realizations per condition
+(same bit-exact-validated reproduction path as A.3), seeds from
+`default_rng([20260801, condition_index])`. Published asset: the voxelwise
+sand-probability field p̂ (float16) per condition.
+
+**B.3 Model ensembles.** K = 128 samples per condition, empty well mask,
+Table 6 settings, noise seed = fresh_noise_seed·1000 + k (k = 0..K−1; k = 0
+coincides with the ensemble-(a) sample of the same row by construction).
+
+**B.4 Metric.** Per condition, over all voxels: signed mean entropy offset
+mean(H_model − H_ref) and mean absolute error mean|H_model − H_ref|
+(bits). Per environment: mean over its 8 conditions with a 95% t-interval
+across conditions. Yardstick: the same statistics computed between the two
+halves of the engine ensemble (split rng `default_rng([20260802,
+condition_index])`) — inside/near/outside at 1×/2× band as in §5.
+Negative signed offset flags under-dispersion.
+
+**B.5 Reporting.** One benchmark table (8 environment rows + pooled).
+The §5 master table remains unchanged; this is an additional scored
+component of the benchmark.

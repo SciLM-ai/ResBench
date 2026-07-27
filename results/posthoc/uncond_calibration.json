@@ -1,0 +1,718 @@
+{
+  "conditions": [
+    {
+      "environment": "lobe",
+      "row_index": 4,
+      "ci": 0,
+      "signed": 0.00023393532675624638,
+      "mae": 0.017130557510966544,
+      "band_signed": 0.0010651470439908745,
+      "band_mae": 0.020594317677846388,
+      "H_ref_mean": 0.9791277185548748
+    },
+    {
+      "environment": "lobe",
+      "row_index": 5,
+      "ci": 1,
+      "signed": 0.00386046359129911,
+      "mae": 0.03937054598564354,
+      "band_signed": 0.0007480170133932091,
+      "band_mae": 0.03543548093506266,
+      "H_ref_mean": 0.9464191603192403
+    },
+    {
+      "environment": "lobe",
+      "row_index": 6,
+      "ci": 2,
+      "signed": -0.027575959064485032,
+      "mae": 0.03685032754824877,
+      "band_signed": 0.0008348243951108144,
+      "band_mae": 0.022137569560140645,
+      "H_ref_mean": 0.9697425913223643
+    },
+    {
+      "environment": "lobe",
+      "row_index": 7,
+      "ci": 3,
+      "signed": -0.07599043547709353,
+      "mae": 0.1044449630815155,
+      "band_signed": 0.0006777743686231784,
+      "band_mae": 0.08127680784589932,
+      "H_ref_mean": 0.6799598174425412
+    },
+    {
+      "environment": "lobe",
+      "row_index": 8,
+      "ci": 4,
+      "signed": -0.055339171698557135,
+      "mae": 0.16990404242895651,
+      "band_signed": 0.004928780432729745,
+      "band_mae": 0.09050875696162516,
+      "H_ref_mean": 0.53199999563858
+    },
+    {
+      "environment": "lobe",
+      "row_index": 9,
+      "ci": 5,
+      "signed": -0.01796628300509448,
+      "mae": 0.039102595961009345,
+      "band_signed": 5.685431659375285e-05,
+      "band_mae": 0.036004709253946623,
+      "H_ref_mean": 0.9344934343992175
+    },
+    {
+      "environment": "lobe",
+      "row_index": 10,
+      "ci": 6,
+      "signed": -0.005348477965515838,
+      "mae": 0.0175346139357223,
+      "band_signed": 2.2146623658908494e-05,
+      "band_mae": 0.016304761084952216,
+      "H_ref_mean": 0.9868808582622796
+    },
+    {
+      "environment": "lobe",
+      "row_index": 11,
+      "ci": 7,
+      "signed": 0.014478907391580089,
+      "mae": 0.03988160740730794,
+      "band_signed": 0.003010702411003853,
+      "band_mae": 0.04384584734004108,
+      "H_ref_mean": 0.9142217419937834
+    },
+    {
+      "environment": "channel:PV_SHOESTRING",
+      "row_index": 4,
+      "ci": 8,
+      "signed": -0.045406239790696495,
+      "mae": 0.10552915862147402,
+      "band_signed": 0.004272898241267505,
+      "band_mae": 0.08512519265737616,
+      "H_ref_mean": 0.5941795299752723
+    },
+    {
+      "environment": "channel:PV_SHOESTRING",
+      "row_index": 5,
+      "ci": 9,
+      "signed": -0.10833120213924011,
+      "mae": 0.14488722523678227,
+      "band_signed": 0.010325915835618265,
+      "band_mae": 0.08100232371625704,
+      "H_ref_mean": 0.5173738696779132
+    },
+    {
+      "environment": "channel:PV_SHOESTRING",
+      "row_index": 6,
+      "ci": 10,
+      "signed": -0.06107243246254195,
+      "mae": 0.11064552576586983,
+      "band_signed": 0.002831185342760523,
+      "band_mae": 0.0824415276316366,
+      "H_ref_mean": 0.44707854276082015
+    },
+    {
+      "environment": "channel:PV_SHOESTRING",
+      "row_index": 7,
+      "ci": 11,
+      "signed": -0.09011863813122342,
+      "mae": 0.11113556211534766,
+      "band_signed": 0.004189867216673998,
+      "band_mae": 0.050267772049245193,
+      "H_ref_mean": 0.8104825942712015
+    },
+    {
+      "environment": "channel:PV_SHOESTRING",
+      "row_index": 8,
+      "ci": 12,
+      "signed": -0.029771299032004515,
+      "mae": 0.0918370583066688,
+      "band_signed": 0.000291794196997059,
+      "band_mae": 0.05655416176840282,
+      "H_ref_mean": 0.8089768544918261
+    },
+    {
+      "environment": "channel:PV_SHOESTRING",
+      "row_index": 9,
+      "ci": 13,
+      "signed": -0.08053438942596017,
+      "mae": 0.11229021211205079,
+      "band_signed": 0.008635874296268876,
+      "band_mae": 0.06496419729726115,
+      "H_ref_mean": 0.699371708468431
+    },
+    {
+      "environment": "channel:PV_SHOESTRING",
+      "row_index": 10,
+      "ci": 14,
+      "signed": 0.020201696833132783,
+      "mae": 0.0987387514529604,
+      "band_signed": 0.008571750991974393,
+      "band_mae": 0.08471476621802723,
+      "H_ref_mean": 0.5858698289617099
+    },
+    {
+      "environment": "channel:PV_SHOESTRING",
+      "row_index": 11,
+      "ci": 15,
+      "signed": -0.0446890122478104,
+      "mae": 0.09804448354500263,
+      "band_signed": 0.003890340938780554,
+      "band_mae": 0.0823026768144503,
+      "H_ref_mean": 0.5690003500551629
+    },
+    {
+      "environment": "channel:CB_LABYRINTH",
+      "row_index": 4,
+      "ci": 16,
+      "signed": -0.10600257282589955,
+      "mae": 0.1268815116983728,
+      "band_signed": 0.008713698848001545,
+      "band_mae": 0.04990400995546367,
+      "H_ref_mean": 0.79066422754424
+    },
+    {
+      "environment": "channel:CB_LABYRINTH",
+      "row_index": 5,
+      "ci": 17,
+      "signed": -0.030054353269267593,
+      "mae": 0.08586730434147022,
+      "band_signed": 0.005302328128942846,
+      "band_mae": 0.07180800106252455,
+      "H_ref_mean": 0.6748837318025414
+    },
+    {
+      "environment": "channel:CB_LABYRINTH",
+      "row_index": 6,
+      "ci": 18,
+      "signed": -0.19888297462273974,
+      "mae": 0.21554145766506116,
+      "band_signed": 0.01868135822903782,
+      "band_mae": 0.05942597982366845,
+      "H_ref_mean": 0.7702902772384597
+    },
+    {
+      "environment": "channel:CB_LABYRINTH",
+      "row_index": 7,
+      "ci": 19,
+      "signed": -0.10770735879723295,
+      "mae": 0.12438785548225528,
+      "band_signed": 0.004212608710003774,
+      "band_mae": 0.05339647340989094,
+      "H_ref_mean": 0.8276951054790852
+    },
+    {
+      "environment": "channel:CB_LABYRINTH",
+      "row_index": 8,
+      "ci": 20,
+      "signed": -0.11129236875271804,
+      "mae": 0.16286795628864215,
+      "band_signed": 0.006433276843600715,
+      "band_mae": 0.07476394771673493,
+      "H_ref_mean": 0.6066776220601378
+    },
+    {
+      "environment": "channel:CB_LABYRINTH",
+      "row_index": 9,
+      "ci": 21,
+      "signed": -0.1563823435327758,
+      "mae": 0.16073036114221598,
+      "band_signed": 0.002043149875117541,
+      "band_mae": 0.048303580483630114,
+      "H_ref_mean": 0.8111717966722092
+    },
+    {
+      "environment": "channel:CB_LABYRINTH",
+      "row_index": 10,
+      "ci": 22,
+      "signed": -0.09780197272739824,
+      "mae": 0.10999552973167812,
+      "band_signed": 0.005548557783694015,
+      "band_mae": 0.060552564315154725,
+      "H_ref_mean": 0.6985743551051952
+    },
+    {
+      "environment": "channel:CB_LABYRINTH",
+      "row_index": 11,
+      "ci": 23,
+      "signed": -0.11698244307148227,
+      "mae": 0.15076474144679208,
+      "band_signed": 0.0039001164208874077,
+      "band_mae": 0.07832775863244101,
+      "H_ref_mean": 0.5960123236907238
+    },
+    {
+      "environment": "channel:CB_JIGSAW",
+      "row_index": 4,
+      "ci": 24,
+      "signed": -0.09103647524929467,
+      "mae": 0.1165991443093649,
+      "band_signed": 0.003486143359716169,
+      "band_mae": 0.06411729850839104,
+      "H_ref_mean": 0.6714318130241963
+    },
+    {
+      "environment": "channel:CB_JIGSAW",
+      "row_index": 5,
+      "ci": 25,
+      "signed": -0.16082275905811655,
+      "mae": 0.16795902431141727,
+      "band_signed": 0.01021041342273457,
+      "band_mae": 0.05648295790044668,
+      "H_ref_mean": 0.7171943703457885
+    },
+    {
+      "environment": "channel:CB_JIGSAW",
+      "row_index": 6,
+      "ci": 26,
+      "signed": -0.10672198102299796,
+      "mae": 0.12260304746381312,
+      "band_signed": 0.002379917365126112,
+      "band_mae": 0.06177092027827947,
+      "H_ref_mean": 0.7733592786470357
+    },
+    {
+      "environment": "channel:CB_JIGSAW",
+      "row_index": 7,
+      "ci": 27,
+      "signed": -0.20655921566923477,
+      "mae": 0.21486256433241258,
+      "band_signed": 0.006723794017534222,
+      "band_mae": 0.06186159808591306,
+      "H_ref_mean": 0.774150934713286
+    },
+    {
+      "environment": "channel:CB_JIGSAW",
+      "row_index": 8,
+      "ci": 28,
+      "signed": -0.1708694505203106,
+      "mae": 0.18350418149895187,
+      "band_signed": 0.009952884523299545,
+      "band_mae": 0.058440533205822,
+      "H_ref_mean": 0.6817380980265167
+    },
+    {
+      "environment": "channel:CB_JIGSAW",
+      "row_index": 9,
+      "ci": 29,
+      "signed": -0.20493611454814756,
+      "mae": 0.21530915116862215,
+      "band_signed": 0.011756758529617954,
+      "band_mae": 0.05954709520310249,
+      "H_ref_mean": 0.6896297564790991
+    },
+    {
+      "environment": "channel:CB_JIGSAW",
+      "row_index": 10,
+      "ci": 30,
+      "signed": -0.12174743211412926,
+      "mae": 0.1339414187870266,
+      "band_signed": 0.007719836696666172,
+      "band_mae": 0.057248498185050435,
+      "H_ref_mean": 0.7620057687982041
+    },
+    {
+      "environment": "channel:CB_JIGSAW",
+      "row_index": 11,
+      "ci": 31,
+      "signed": -0.12085281233963327,
+      "mae": 0.12713961687347,
+      "band_signed": 0.00946874687059631,
+      "band_mae": 0.051895767100661,
+      "H_ref_mean": 0.7403602739270946
+    },
+    {
+      "environment": "channel:SH_DISTAL",
+      "row_index": 4,
+      "ci": 32,
+      "signed": -0.1202848092806296,
+      "mae": 0.1407838763213626,
+      "band_signed": 0.007066950595662042,
+      "band_mae": 0.05336254163171534,
+      "H_ref_mean": 0.7967151205337925
+    },
+    {
+      "environment": "channel:SH_DISTAL",
+      "row_index": 5,
+      "ci": 33,
+      "signed": -0.2414378090503364,
+      "mae": 0.2626572740594344,
+      "band_signed": 0.015853127620612542,
+      "band_mae": 0.061343437721607025,
+      "H_ref_mean": 0.7456207679870481
+    },
+    {
+      "environment": "channel:SH_DISTAL",
+      "row_index": 6,
+      "ci": 34,
+      "signed": -0.2221773145453321,
+      "mae": 0.2294435472899242,
+      "band_signed": 0.008570192081456372,
+      "band_mae": 0.049102728968272516,
+      "H_ref_mean": 0.8479436918715259
+    },
+    {
+      "environment": "channel:SH_DISTAL",
+      "row_index": 7,
+      "ci": 35,
+      "signed": -0.2590439446335387,
+      "mae": 0.2747112470526073,
+      "band_signed": 0.0236130377156194,
+      "band_mae": 0.06465993797413429,
+      "H_ref_mean": 0.6877820149517488
+    },
+    {
+      "environment": "channel:SH_DISTAL",
+      "row_index": 8,
+      "ci": 36,
+      "signed": -0.22872538881366974,
+      "mae": 0.2524721358588806,
+      "band_signed": 0.011362505478210643,
+      "band_mae": 0.08078290003110142,
+      "H_ref_mean": 0.644819321325077
+    },
+    {
+      "environment": "channel:SH_DISTAL",
+      "row_index": 9,
+      "ci": 37,
+      "signed": -0.1349874984738945,
+      "mae": 0.1609827069060969,
+      "band_signed": 0.014843896496196538,
+      "band_mae": 0.06988377468845805,
+      "H_ref_mean": 0.6988260387519798
+    },
+    {
+      "environment": "channel:SH_DISTAL",
+      "row_index": 10,
+      "ci": 38,
+      "signed": -0.21279289672390014,
+      "mae": 0.22214729204645334,
+      "band_signed": 0.005724554611464452,
+      "band_mae": 0.0530212604314667,
+      "H_ref_mean": 0.8032021906056022
+    },
+    {
+      "environment": "channel:SH_DISTAL",
+      "row_index": 11,
+      "ci": 39,
+      "signed": -0.1719375949315986,
+      "mae": 0.21349461935361036,
+      "band_signed": 0.009786542200400558,
+      "band_mae": 0.06324383896606814,
+      "H_ref_mean": 0.772349564165904
+    },
+    {
+      "environment": "channel:SH_PROXIMAL",
+      "row_index": 4,
+      "ci": 40,
+      "signed": -0.1221459414360207,
+      "mae": 0.1466311107765228,
+      "band_signed": 0.003386165127687885,
+      "band_mae": 0.06389046577250741,
+      "H_ref_mean": 0.6515524301623831
+    },
+    {
+      "environment": "channel:SH_PROXIMAL",
+      "row_index": 5,
+      "ci": 41,
+      "signed": -0.21798577190149473,
+      "mae": 0.2643377613667786,
+      "band_signed": 0.016871251449581695,
+      "band_mae": 0.057437627146361046,
+      "H_ref_mean": 0.7760344344830281
+    },
+    {
+      "environment": "channel:SH_PROXIMAL",
+      "row_index": 6,
+      "ci": 42,
+      "signed": -0.21087390840763356,
+      "mae": 0.278483926702917,
+      "band_signed": 0.021571350537419404,
+      "band_mae": 0.06383666095360635,
+      "H_ref_mean": 0.6633694911011683
+    },
+    {
+      "environment": "channel:SH_PROXIMAL",
+      "row_index": 7,
+      "ci": 43,
+      "signed": -0.2641783642235118,
+      "mae": 0.2697867863998203,
+      "band_signed": 0.011264141888406094,
+      "band_mae": 0.06555161750970619,
+      "H_ref_mean": 0.7193308719694563
+    },
+    {
+      "environment": "channel:SH_PROXIMAL",
+      "row_index": 8,
+      "ci": 44,
+      "signed": -0.16482040733486963,
+      "mae": 0.18759074245930002,
+      "band_signed": 0.003427919821026532,
+      "band_mae": 0.07501596455864071,
+      "H_ref_mean": 0.577224730240905
+    },
+    {
+      "environment": "channel:SH_PROXIMAL",
+      "row_index": 9,
+      "ci": 45,
+      "signed": -0.25866865586051324,
+      "mae": 0.26318400999475977,
+      "band_signed": 0.005230737759055114,
+      "band_mae": 0.06703633229881407,
+      "H_ref_mean": 0.6769190034387536
+    },
+    {
+      "environment": "channel:SH_PROXIMAL",
+      "row_index": 10,
+      "ci": 46,
+      "signed": -0.1625646546751057,
+      "mae": 0.1908735987456882,
+      "band_signed": 0.010748339854048158,
+      "band_mae": 0.05833168651652638,
+      "H_ref_mean": 0.7064358078134534
+    },
+    {
+      "environment": "channel:SH_PROXIMAL",
+      "row_index": 11,
+      "ci": 47,
+      "signed": -0.14459075246406772,
+      "mae": 0.16641522489454225,
+      "band_signed": 0.005229355889878204,
+      "band_mae": 0.0621894040182552,
+      "H_ref_mean": 0.6702682573388752
+    },
+    {
+      "environment": "channel:MEANDER_OXBOW",
+      "row_index": 4,
+      "ci": 48,
+      "signed": -0.05852331871262104,
+      "mae": 0.08976562446850982,
+      "band_signed": 0.00787795290405449,
+      "band_mae": 0.0432856509573189,
+      "H_ref_mean": 0.872762264212292
+    },
+    {
+      "environment": "channel:MEANDER_OXBOW",
+      "row_index": 5,
+      "ci": 49,
+      "signed": -0.035030960594367264,
+      "mae": 0.09869360734389392,
+      "band_signed": 0.007356528410404003,
+      "band_mae": 0.04415616533783412,
+      "H_ref_mean": 0.859005208019546
+    },
+    {
+      "environment": "channel:MEANDER_OXBOW",
+      "row_index": 6,
+      "ci": 50,
+      "signed": -0.1853939064572187,
+      "mae": 0.19601857663841826,
+      "band_signed": 0.008658363682938694,
+      "band_mae": 0.06057834354948308,
+      "H_ref_mean": 0.754452450708218
+    },
+    {
+      "environment": "channel:MEANDER_OXBOW",
+      "row_index": 7,
+      "ci": 51,
+      "signed": -0.09668866818081093,
+      "mae": 0.13136639476622014,
+      "band_signed": 0.007990937780006166,
+      "band_mae": 0.055136539355101,
+      "H_ref_mean": 0.7560652255956665
+    },
+    {
+      "environment": "channel:MEANDER_OXBOW",
+      "row_index": 8,
+      "ci": 52,
+      "signed": -0.10127432662772182,
+      "mae": 0.1265776215026544,
+      "band_signed": 0.01971951449386532,
+      "band_mae": 0.0628238741850565,
+      "H_ref_mean": 0.7949960856759306
+    },
+    {
+      "environment": "channel:MEANDER_OXBOW",
+      "row_index": 9,
+      "ci": 53,
+      "signed": -0.03489307709309313,
+      "mae": 0.09480859517249508,
+      "band_signed": 0.0006514924559054298,
+      "band_mae": 0.04405493509727601,
+      "H_ref_mean": 0.8993482701991475
+    },
+    {
+      "environment": "channel:MEANDER_OXBOW",
+      "row_index": 10,
+      "ci": 54,
+      "signed": -0.11660020183266863,
+      "mae": 0.1363766922240294,
+      "band_signed": 0.0028748104170655013,
+      "band_mae": 0.052391809506586264,
+      "H_ref_mean": 0.7582351161103876
+    },
+    {
+      "environment": "channel:MEANDER_OXBOW",
+      "row_index": 11,
+      "ci": 55,
+      "signed": -0.18491845759724637,
+      "mae": 0.2003010123570354,
+      "band_signed": 0.005678668146004558,
+      "band_mae": 0.05062206273377562,
+      "H_ref_mean": 0.8138804897657181
+    },
+    {
+      "environment": "delta",
+      "row_index": 4,
+      "ci": 56,
+      "signed": -0.0984729752228527,
+      "mae": 0.11554146240563802,
+      "band_signed": 0.0017468980087458784,
+      "band_mae": 0.048131848844011095,
+      "H_ref_mean": 0.3178919783939631
+    },
+    {
+      "environment": "delta",
+      "row_index": 5,
+      "ci": 57,
+      "signed": -0.04857774878933885,
+      "mae": 0.1067990905708951,
+      "band_signed": 0.002039454948038419,
+      "band_mae": 0.062071052214731234,
+      "H_ref_mean": 0.5474763582288182
+    },
+    {
+      "environment": "delta",
+      "row_index": 6,
+      "ci": 58,
+      "signed": -0.12035623884245207,
+      "mae": 0.13529578478833576,
+      "band_signed": 0.008253013288046127,
+      "band_mae": 0.05235559981320985,
+      "H_ref_mean": 0.354776045827603
+    },
+    {
+      "environment": "delta",
+      "row_index": 7,
+      "ci": 59,
+      "signed": -0.13763349160028487,
+      "mae": 0.1495232045274887,
+      "band_signed": 0.02065597721937475,
+      "band_mae": 0.04587832825220917,
+      "H_ref_mean": 0.33421817890578354
+    },
+    {
+      "environment": "delta",
+      "row_index": 8,
+      "ci": 60,
+      "signed": -0.11499441565589075,
+      "mae": 0.12965039238953766,
+      "band_signed": 0.0025482041524651734,
+      "band_mae": 0.05098483946167365,
+      "H_ref_mean": 0.395081028467646
+    },
+    {
+      "environment": "delta",
+      "row_index": 9,
+      "ci": 61,
+      "signed": -0.11635971621448313,
+      "mae": 0.13284909967975855,
+      "band_signed": 0.0022192218360146797,
+      "band_mae": 0.04711402423670806,
+      "H_ref_mean": 0.40768012951172383
+    },
+    {
+      "environment": "delta",
+      "row_index": 10,
+      "ci": 62,
+      "signed": -0.08246022921559903,
+      "mae": 0.11917369682143507,
+      "band_signed": 0.007456241739636876,
+      "band_mae": 0.04770845080623236,
+      "H_ref_mean": 0.3179053703142371
+    },
+    {
+      "environment": "delta",
+      "row_index": 11,
+      "ci": 63,
+      "signed": -0.09313312552403602,
+      "mae": 0.11327154923482607,
+      "band_signed": 0.0003439534563694851,
+      "band_mae": 0.054881958119805924,
+      "H_ref_mean": 0.41215722854571296
+    }
+  ],
+  "environments": [
+    {
+      "environment": "lobe",
+      "signed": -0.020455877612638822,
+      "signed_ci": 0.026110519797342063,
+      "mae": 0.0580274067324213,
+      "mae_ci": 0.04409490168582312,
+      "band_mae": 0.043263531332439265,
+      "verdict": "near"
+    },
+    {
+      "environment": "channel:PV_SHOESTRING",
+      "signed": -0.054965189549543034,
+      "signed_ci": 0.033530473459651065,
+      "mae": 0.10913849714451954,
+      "mae_ci": 0.013548209713860596,
+      "band_mae": 0.07342157726908206,
+      "verdict": "near"
+    },
+    {
+      "environment": "channel:CB_LABYRINTH",
+      "signed": -0.11563829844993928,
+      "signed_ci": 0.040483439160862576,
+      "mae": 0.14212958972456097,
+      "mae_ci": 0.03312395226533466,
+      "band_mae": 0.06206028942493855,
+      "verdict": "outside"
+    },
+    {
+      "environment": "channel:CB_JIGSAW",
+      "signed": -0.14794328006523308,
+      "signed_ci": 0.037035904828043184,
+      "mae": 0.16023976859313482,
+      "mae_ci": 0.0342215882919378,
+      "band_mae": 0.05892058355845828,
+      "verdict": "outside"
+    },
+    {
+      "environment": "channel:SH_DISTAL",
+      "signed": -0.1989234070566125,
+      "signed_ci": 0.04245168178352063,
+      "mae": 0.2195865873610462,
+      "mae_ci": 0.03967532636747704,
+      "band_mae": 0.06192505255160294,
+      "verdict": "outside"
+    },
+    {
+      "environment": "channel:SH_PROXIMAL",
+      "signed": -0.19322855703790215,
+      "signed_ci": 0.04402584906999173,
+      "mae": 0.22091289516754112,
+      "mae_ci": 0.044555701344645704,
+      "band_mae": 0.06416121984680216,
+      "verdict": "outside"
+    },
+    {
+      "environment": "channel:MEANDER_OXBOW",
+      "signed": -0.1016653646369685,
+      "signed_ci": 0.049919184624203326,
+      "mae": 0.13423851555915706,
+      "mae_ci": 0.03610090077749779,
+      "band_mae": 0.051631172590303934,
+      "verdict": "outside"
+    },
+    {
+      "environment": "delta",
+      "signed": -0.10149849263311717,
+      "signed_ci": 0.023021994708873963,
+      "mae": 0.12526303505223937,
+      "mae_ci": 0.011750058783842872,
+      "band_mae": 0.051140762718572666,
+      "verdict": "outside"
+    }
+  ]
+}
