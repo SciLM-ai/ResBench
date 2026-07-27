@@ -604,3 +604,24 @@ Stated in advance of any specialist score.
 - Subset ratios are 1/10 (PV) and 1/5 (lobe), not the planning-language
   "1/8"; matched exposure is defined by 40 epochs, not by a uniform
   ratio.
+
+## Amendment E-1 — lobe specialist platform change (2026-07-27, during training, before any scoring)
+
+Recorded during training, before any specialist validation loss or score
+was computed. To meet the rebuttal deadline, the lobe specialist run is
+switched from 1× GH200 to 2× GH200 DDP (nodes c611-041 + c608-061) at
+its epoch-5 checkpoint, resuming from `training_state.pt`. Training
+semantics are unchanged: same global batch 384 (now 2 ranks × 192, each
+accumulated as 96 × 2), same peak LR 3.4641e-3 (the wrapper deliberately
+skips the library's world-size re-scaling), same epoch-parametrized
+schedule and EMA decay with one update per optimizer step, and the same
+468 optimizer steps/epoch (DistributedSampler with drop_last shards
+90,000 samples per rank). DDP's cross-rank gradient mean of per-rank
+accumulated means equals the single-GPU accumulated mean (GroupNorm-only
+model), so the gradient computation is identical to E.2. Disclosed
+differences: within-epoch data order (per-rank DistributedSampler
+shuffle, seed 42, vs one global shuffle stream) and per-rank FM
+noise/CFG draws (torch seeds 8102 + rank). The PV_SHOESTRING run is
+unaffected (1× GH200 throughout). Both variants of the launcher and the
+DDP code path are in `scripts/specialists/` (ResFlow repo), smoke-tested
+before the switch.
