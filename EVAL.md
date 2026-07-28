@@ -642,3 +642,8 @@ degrades before epoch 80, the run may be truncated with the operator's
 explicit approval; any such truncation and its evidence will be logged
 in SPECIALISTS.md. The lobe extension (also fired) is deferred to
 camera-ready under the same 80-epoch recipe.
+
+(Update 2026-07-27 23:15, pre-scoring: the lobe extension is queued to
+start on the same 4-node platform immediately after the PV extension
+completes, same 80-epoch recipe and observational val watcher with the
+E-2 truncation clause; its results remain camera-ready-bound.)
