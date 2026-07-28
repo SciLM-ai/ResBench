@@ -72,10 +72,20 @@ def comparison_table(master):
                      **{c: float(m[c]) for c in CELLS},
                      **{f'{c}_verdict': str(m[f'{c}_verdict']) for c in CELLS},
                      'well_mismatch': f"{m['well_mismatch_pct']:.3f} ({m['well_verdict']})"})
-        rows.append({'environment': env, 'source': 'specialist',
+        rows.append({'environment': env, 'source': 'specialist (matched 40 ep)',
                      **{c: float(s[c]) for c in CELLS},
                      **{f'{c}_verdict': verdict(float(s[c]), band[c]) for c in CELLS},
                      'well_mismatch': 'n/a*'})
+        ext_path = OUT / f'{tag}_ext_metrics.parquet'
+        if ext_path.exists():
+            x = pd.read_parquet(ext_path)
+            x = x[x['environment'] == env].iloc[0]
+            rows.append({'environment': env,
+                         'source': 'specialist (ext, union argmin)',
+                         **{c: float(x[c]) for c in CELLS},
+                         **{f'{c}_verdict': verdict(float(x[c]), band[c])
+                            for c in CELLS},
+                         'well_mismatch': 'n/a*'})
     return pd.DataFrame(rows)
 
 
@@ -105,11 +115,14 @@ def parity_outcome(table):
     out = {}
     for env, _ in ENVS:
         f = table[(table.environment == env) & (table.source == 'foundation')].iloc[0]
-        s = table[(table.environment == env) & (table.source == 'specialist')].iloc[0]
+        srows = table[(table.environment == env)
+                      & (table.source.str.startswith('specialist'))]
+        s = srows.iloc[-1]   # ext (union-argmin) row when present, else 40 ep
         per_col = {c: (f[f'{c}_verdict'], s[f'{c}_verdict'],
                        rank[f[f'{c}_verdict']] >= rank[s[f'{c}_verdict']])
                    for c in CELLS}
         out[env] = {'substantiated': all(v[2] for v in per_col.values()),
+                    'specialist_source': str(s['source']),
                     'columns': per_col}
     return out
 
@@ -122,9 +135,13 @@ def _band(ax, lags, ha, hb, kind, axis):
 
 
 def overlay_curves(env, tag, mrep, srep):
-    """Variogram x/y/z; then tau x/y/z + geobody CDF. 3 sources each."""
+    """Variogram x/y/z; then tau x/y/z + geobody CDF. 3 sources each,
+    plus the extension specialist as a 4th curve when its report exists."""
     r = mrep[env]
     sgen = srep[env]['gen']
+    ext_path = OUT / f'{tag}_ext_report.npy'
+    xgen = (np.load(ext_path, allow_pickle=True)[0][env]['gen']
+            if ext_path.exists() else None)
     ha, hb = r['halves']
     paths = []
     for kind, ylabel, fname in [
@@ -139,7 +156,10 @@ def overlay_curves(env, tag, mrep, srep):
             ax.plot(lags, np.asarray(r['gen'][kind][a]), c=SRC_COLORS['foundation'],
                     ls=SRC_LS['foundation'], lw=1.6, label='foundation')
             ax.plot(lags, np.asarray(sgen[kind][a]), c=SRC_COLORS['specialist'],
-                    ls=SRC_LS['specialist'], lw=1.6, label='specialist')
+                    ls=SRC_LS['specialist'], lw=1.6, label='specialist (40 ep)')
+            if xgen is not None:
+                ax.plot(lags, np.asarray(xgen[kind][a]), c='#eb6834', ls=':',
+                        lw=1.6, label='specialist (ext)')
             ax.set_title(f'{F.SHORT[env]} — {F.AXIS_NAMES[a]}')
             ax.set_xlabel('lag h (voxels)')
             if a == 0:
@@ -150,12 +170,15 @@ def overlay_curves(env, tag, mrep, srep):
 
     # geobody-size CDF (bodies pooled over the ensemble), log10 size
     fig, ax = plt.subplots(figsize=(3.6, 2.9))
-    for label, sizes, color, ls in [
-            ('reference', r['ref']['sizes'], F.REF_GRAY, '-'),
-            ('foundation', r['gen']['sizes'], SRC_COLORS['foundation'],
-             SRC_LS['foundation']),
-            ('specialist', sgen['sizes'], SRC_COLORS['specialist'],
-             SRC_LS['specialist'])]:
+    series = [
+        ('reference', r['ref']['sizes'], F.REF_GRAY, '-'),
+        ('foundation', r['gen']['sizes'], SRC_COLORS['foundation'],
+         SRC_LS['foundation']),
+        ('specialist (40 ep)', sgen['sizes'], SRC_COLORS['specialist'],
+         SRC_LS['specialist'])]
+    if xgen is not None:
+        series.append(('specialist (ext)', xgen['sizes'], '#eb6834', ':'))
+    for label, sizes, color, ls in series:
         s = np.sort(np.log10(np.asarray(sizes, dtype=float)))
         ax.plot(s, np.linspace(0, 1, len(s)), c=color, ls=ls, lw=1.6, label=label)
     ax.set_xlabel('log10 geobody size (voxels)')
@@ -171,12 +194,17 @@ def ntg_hist(env, tag):
     slug = env_slug(env)
     fig, ax = plt.subplots(figsize=(3.8, 2.9))
     bins = np.linspace(0, 1, 41)
-    for label, d, color, ls in [
-            ('reference', EVAL / 'reference', F.REF_GRAY, '-'),
-            ('foundation', EVAL / 'ensemble_a', SRC_COLORS['foundation'],
-             SRC_LS['foundation']),
-            ('specialist', EVAL / f'specialist_{tag}' / 'ensemble_a',
-             SRC_COLORS['specialist'], SRC_LS['specialist'])]:
+    series = [
+        ('reference', EVAL / 'reference', F.REF_GRAY, '-'),
+        ('foundation', EVAL / 'ensemble_a', SRC_COLORS['foundation'],
+         SRC_LS['foundation']),
+        ('specialist (40 ep)', EVAL / f'specialist_{tag}' / 'ensemble_a',
+         SRC_COLORS['specialist'], SRC_LS['specialist'])]
+    if (EVAL / f'specialist_{tag}_ext' / 'ensemble_a').exists():
+        series.append(('specialist (ext)',
+                       EVAL / f'specialist_{tag}_ext' / 'ensemble_a',
+                       '#eb6834', ':'))
+    for label, d, color, ls in series:
         _, vols = rio.load_ensemble(str(d))[env]
         ntg = vols.reshape(len(vols), -1).mean(axis=1)
         ax.hist(ntg, bins=bins, density=True, histtype='step', color=color,
@@ -202,8 +230,14 @@ def compartmentalization():
         s = {r['environment']: r for r in sp['compartmentalization']}[env]
         assert np.isclose(s['ref_frac_tauz_lt_099'], m['ref_frac_tauz_lt_099']), \
             f'{env}: reference mismatch between master and specialist posthoc'
-        for label, d, pre in [('reference', m, 'ref'), ('foundation', m, 'gen'),
-                              ('specialist', s, 'gen')]:
+        entries = [('reference', m, 'ref'), ('foundation', m, 'gen'),
+                   ('specialist (40 ep)', s, 'gen')]
+        ext_dir = OUT / f'posthoc_{tag}_ext'
+        if (ext_dir / 'posthoc_geobody.json').exists():
+            xp = json.load(open(ext_dir / 'posthoc_geobody.json'))
+            x = {r['environment']: r for r in xp['compartmentalization']}[env]
+            entries.append(('specialist (ext)', x, 'gen'))
+        for label, d, pre in entries:
             lines.append(
                 f"| {env} | {label} | "
                 f"{d[f'{pre}_frac_tauz_lt_099']:.3f} "
