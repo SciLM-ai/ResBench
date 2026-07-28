@@ -1,0 +1,40 @@
+=== [1/4] validation losses (channel:PV_SHOESTRING) ===
+env=channel:PV_SHOESTRING  val subset=5000  K=4  seed=20260901
+epoch   5: val loss 1.396957  (n=5000)
+epoch  10: val loss 1.058702  (n=5000)
+epoch  15: val loss 0.860104  (n=5000)
+epoch  20: val loss 0.726320  (n=5000)
+epoch  25: val loss 0.621577  (n=5000)
+epoch  30: val loss 0.542778  (n=5000)
+epoch  35: val loss 0.481434  (n=5000)
+epoch  40: val loss 0.430693  (n=5000)
+
+Best: epoch 40 (0.430693)   last: epoch 40 (0.430693)
+ANTI-UNDERTRAINING: FIRES (best == final epoch)
+Saved: /scratch/08405/ilgar/specialist_runs/pv_shoestring/checkpoints/val_losses.json
+BEST_EPOCH=40 ANTI_UNDERTRAINING_FIRES=YES CKPT=/scratch/08405/ilgar/specialist_runs/pv_shoestring/checkpoints/inference_epoch040.pt
+=== [2/4] generation (512 volumes, Table 6, seed offset +500000) ===
+self-test OK: replica sampler is bit-identical to FlowMatching.sample
+channel:PV_SHOESTRING k=0 rows 0-255: 60s elapsed
+channel:PV_SHOESTRING k=0 rows 256-511: 120s elapsed
+channel:PV_SHOESTRING: saved (512, 64, 64, 32) ntg_mean=0.1850
+done: 512 volumes in 122.8s -> /work/08405/ilgar/vista/resbench_eval/specialist_pv_shoestring/generation_manifest_a.json
+=== [3/4] ResBench scoring ===
+| environment | |dNTG| | variogram MAE/sill | connectivity MAE | geobody W1 (log10) | |d largest frac| | well mismatch % |
+|---|---|---|---|---|---|---|
+| channel:PV_SHOESTRING | 0.0398 (outside; band 0.0030) | 0.1067 (outside; band 0.0138) | 0.1326 (outside; band 0.0021) | 0.0670 (outside; band 0.0140) | 0.0806 (outside; band 0.0179) | n/a |
+| pooled | 0.0398 (outside; band 0.0030) | 0.1067 (outside; band 0.0138) | 0.1326 (outside; band 0.0021) | 0.0670 (outside; band 0.0140) | 0.0806 (outside; band 0.0179) | n/a |
+=== [4/4] compartmentalization posthoc ===
+## Geobody W1 vs minimum body size (post-hoc)
+
+| environment | W1 min≥1 (band) | W1 min≥2 (band) | W1 min≥8 (band) |
+|---|---|---|---|
+| channel:PV_SHOESTRING | 0.0670 (outside; 0.0140) | 0.2466 (outside; 0.0296) | 1.2109 (outside; 0.0693) |
+| pooled | 0.0670 (n/a; —) | 0.2466 (n/a; —) | 1.2109 (n/a; —) |
+
+## Per-volume compartmentalization: reference vs ResFlow (post-hoc)
+
+| environment | % vols τ_z<0.99 ref | gen | % vols spanning z ref | gen | largest-frac median [IQR] ref | gen |
+|---|---|---|---|---|---|---|
+| channel:PV_SHOESTRING | 28.7% [25.0, 32.8] | 100.0% [99.3, 100.0] | 74.0% [70.1, 77.6] | 78.3% [74.6, 81.7] | 0.995 [0.903, 0.998] | 0.838 [0.764, 0.912] |
+PIPELINE_DONE tag=pv_shoestring best_epoch=40 fires=YES
