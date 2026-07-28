@@ -406,6 +406,37 @@ marginalized to environment-only (per-instance parameters drawn at
 random from the training split), against a single-environment specialist
 trained on 90,000 volumes of this facies style.
 
+## Assembly-consistency benchmark (EVAL.md Addendum E — scored)
+
+Full outputs: `results/assembly/`; engine reference published in
+`results/assembly_reference/`. Three ensembles at ONE shared condition (the
+median-nearest training instance `channel_pv_shoestring/shard_0236|20`,
+azimuth 95): (A) 250 native model volumes, (B) 250 tiles cut from ten
+424x424x32 MultiDiffusion assemblies at the deployed Table 6 tiling
+(10x10 blocks, overlap 24), (C) 256 fresh engine realizations. Note the
+fixed-condition band is far tighter than master-table bands.
+
+| comparison | \|dNTG\| | NTG-dist W1 | vario MAE | conn. MAE | geobody W1 | extent W1 |
+|---|---|---|---|---|---|---|
+| band (C split-half) | 0.0001 | 0.0015 | 0.0039 | 0.0054 | 0.0085 | 0.0072 |
+| B vs C (headline) | 0.0621 | 0.0621 | 0.1348 | 0.0153 | 0.1089 | 0.0673 |
+| A vs C (native control) | 0.0115 | 0.0116 | 0.0366 | 0.0107 | 0.0477 | 0.0281 |
+| B vs A (MultiDiffusion effect) | 0.0506 | 0.0506 | 0.1258 | 0.0229 | 0.0795 | 0.0406 |
+
+**Finding (three parts).** (1) No local seams: channels are continuous
+across block boundaries; the stride-locked profile amplitude is comparable
+to hard-concatenation of engine volumes at their own seam period.
+(2) BUT channel *positions* lock to the tiling grid: the sand-fraction
+profile oscillates 0.10-0.50 with a dominant spectral peak exactly at the
+40-cell block stride (see `results/assembly/assembly_slice.png`: parallel
+channels spaced ~40 cells). (3) Global statistics drift: +0.062 absolute
+NTG excess vs the engine (0.285 vs 0.223, +28% relative; +0.051 vs native
+generation at the identical condition), variogram MAE 3.7x the native
+control's. The mean NTG assemblies produce is 0.28 for a condition
+requesting 0.228. Assemblies are visually seamless and locally coherent
+but do NOT preserve per-tile statistics; the drift is systematic across
+all ten seeds (per-assembly NTG 0.2796-0.2802).
+
 ## Anomalies to look at before writing the rebuttal
 
 - **Systematic conditional under-dispersion (entropy calibration)** — the
