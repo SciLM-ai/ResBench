@@ -356,6 +356,56 @@ conditional realizations, promoting it to the fully published set
 (now 5 of 8 environments; labyrinth 25, SH proximal 36, jigsaw 3 remain
 indicative).
 
+## Published-baseline comparison (EVAL.md Addendum D — scored)
+
+Full deliverable: [results/BASELINE.md](results/BASELINE.md) (combined
+table, four figure panels, compartmentalization extension, run manifests,
+anomalies). Executed 2026-07-27 under the pre-registered Addendum D
+protocol; the primary path ran (authors' official GANSim3D_v2,
+unconditional, paper-default 3,600-kimg schedule, one attempt, no
+divergence, 7.9 GPU-h of the 48 ceiling); the DDPM fallback was never
+triggered. Checkpoint kimg 2720 selected by the training-split proxy.
+
+| row (vs master band) | \|dNTG\| | vario/sill | conn. | geobody W1 | \|d lgst\| |
+|---|---|---|---|---|---|
+| band | 0.0050 | 0.0115 | 0.0014 | 0.0125 | 0.0117 |
+| GANSim-3D uncond. | 0.0013 in | 0.0114 in | 0.0097 out | 0.3881 out | 0.0195 near |
+| ResFlow env-only (marginalized) | 0.0117 out | 0.0266 out† | 0.0041 out | 0.0239 near | 0.0501 out |
+| ResFlow param-cond (master row) | 0.0069 near | 0.0202 near | 0.0034 out | 0.0210 near | 0.0443 out |
+
+† `near` under the run-native band (single-env runs draw a different
+split-half permutation; see BASELINE.md).
+
+Compartmentalization: 45.5% of GANSim volumes with τ_z < 0.99 vs 28.7%
+reference (ResFlow env-only 27.0%); NTG spread sd 0.071 vs 0.081
+reference — no mode collapse.
+
+**Draft rebuttal text.** Following the reviewers' request, we trained a
+published generative baseline — GANSim-3D (Song, Mukerji & Hou, 2022,
+*Water Resources Research*), using the authors' official code in its
+unconditional configuration — on the full PV_SHOESTRING training split
+(90,000 volumes) under a pre-registered protocol (paper-default schedule,
+one training run, checkpoint selection by training-split statistics
+only), and scored it with the identical frozen ResBench metrics against
+the same 512-volume test reference. The baseline reproduces low-order
+statistics well: ensemble NTG within 0.0013 of the reference and
+sill-normalized variogram MAE of 0.0114, both inside the split-half
+sampling band — the only inside cells in the comparison. It misses
+higher-order structure by an order of magnitude, however: geobody-size
+Wasserstein distance of 0.388 (31× the band and 16× the 0.024 of ResFlow
+conditioned on environment only), connectivity MAE 2.4–2.9× ResFlow's,
+and 45.5% of its volumes vertically compartmentalized versus 28.7% in
+the reference (ResFlow env-only: 27.0%). Its per-volume NTG spread
+(sd 0.071 vs. reference 0.081) shows no mode collapse, so these
+structural deficits are not an artifact of a degenerate ensemble. This
+is precisely the regime the benchmark's structural metrics are designed
+to discriminate — and where ResFlow retains its advantage under the most
+conservative comparison we could construct: its weakest environment, a
+single global model spanning all eight environments, with conditioning
+marginalized to environment-only (per-instance parameters drawn at
+random from the training split), against a single-environment specialist
+trained on 90,000 volumes of this facies style.
+
 ## Anomalies to look at before writing the rebuttal
 
 - **Systematic conditional under-dispersion (entropy calibration)** — the
