@@ -437,6 +437,32 @@ requesting 0.228. Assemblies are visually seamless and locally coherent
 but do NOT preserve per-tile statistics; the drift is systematic across
 all ten seeds (per-assembly NTG 0.2796-0.2802).
 
+### Lobe tier (E.7)
+
+Same design, environment `lobe` (multi-body), shared condition
+`lobe/shard_0002|512` (nearest the 180k-row training medians), azimuth 95.
+Outputs: `results/assembly/lobe_*`; engine reference
+`results/assembly_reference/lobe/`.
+
+| comparison | \|dNTG\| | NTG-dist W1 | vario MAE | conn. MAE | geobody W1 | extent W1 |
+|---|---|---|---|---|---|---|
+| band (C split-half) | 0.0001 | 0.0011 | 0.0041 | 0.0040 | 0.0190 | 0.0100 |
+| B vs C (headline) | 0.0138 | 0.0138 | 0.0127 | 0.0319 | 0.2121 | 0.0785 |
+| A vs C (native control) | 0.0001 | 0.0024 | 0.0142 | 0.0226 | 0.0656 | 0.0399 |
+| B vs A (MultiDiffusion effect) | 0.0137 | 0.0137 | 0.0134 | 0.0317 | 0.2423 | 0.0966 |
+
+**Lobe finding: a second, distinct failure mode.** No stride-locking
+(period-40 amplitude 0.0098, at engine-concatenation noise level 0.0112)
+and proportions nearly preserved (native |dNTG| 0.0001; assembly -0.0138,
+mild under-production). But body-scale structure distorts strongly: the
+tiling quadruples the geobody-size mismatch relative to native generation
+(W1 0.212 vs 0.066; 11x band), with connectivity MAE 8x band and extent
+W1 8x band. Consistent with blending welding the thin mud drapes between
+lobes in overlap zones (visible in `lobe_assembly_slice.png`), merging
+bodies. Together the two tiers show environment-dependent failure modes:
+channels get stride-locked positions and a sand excess; lobes keep
+proportions and positions but over-merge at the body scale.
+
 ## Anomalies to look at before writing the rebuttal
 
 - **Systematic conditional under-dispersion (entropy calibration)** — the

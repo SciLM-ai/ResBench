@@ -22,15 +22,14 @@ from scipy.stats import wasserstein_distance
 
 from resbench import metrics
 
-SPLIT_SEED = 20260812
 TILE_ORIGIN = 52
 TILE_N = 5
 TILE = 64
 STRIDE_PERIOD = 40  # block stride of the overlap-24 tiling
 
 
-def load_npz_dir(d):
-    f = sorted(Path(d, 'channel_PV_SHOESTRING').glob('volumes_*.npz'))[0]
+def load_npz_dir(d, slug):
+    f = sorted(Path(d, slug).glob('volumes_*.npz'))[0]
     return np.load(f, allow_pickle=True)['volumes']
 
 
@@ -99,13 +98,16 @@ def main():
     ap.add_argument('--assembly-dir', required=True)
     ap.add_argument('--engine-dir', required=True)
     ap.add_argument('--out-dir', required=True)
+    ap.add_argument('--env-slug', default='channel_PV_SHOESTRING')
+    ap.add_argument('--split-seed', type=int, default=20260812)
     args = ap.parse_args()
+    SPLIT_SEED = args.split_seed
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
 
-    A = load_npz_dir(args.native_dir)
+    A = load_npz_dir(args.native_dir, args.env_slug)
     B, profs_x, profs_y = cut_tiles(args.assembly_dir)
-    C = load_npz_dir(args.engine_dir)
+    C = load_npz_dir(args.engine_dir, args.env_slug)
     print(f'A(native)={A.shape} B(tiles)={B.shape} C(engine)={C.shape}')
 
     sA, sB, sC = ens_summary(A), ens_summary(B), ens_summary(C)

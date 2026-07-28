@@ -1,0 +1,50 @@
+{
+  "addendum": "E.3 ensemble C",
+  "selected_instance": "lobe/shard_0002|512",
+  "selection_distance": 0.00026340662614240745,
+  "slim_params": {
+    "ntg": 0.5125350952148438,
+    "width_cells": 45.661864757537835,
+    "depth_cells": 12.34849140048027,
+    "asp": 1.7386842966079712
+  },
+  "medians_used": {
+    "ntg": 0.5032196044921875,
+    "width_cells": 45.96666540205479,
+    "depth_cells": 12.497544884681702,
+    "asp": 1.7497940063476562
+  },
+  "env": "lobe",
+  "azimuth_override": 95.0,
+  "n": 256,
+  "seed_base": 2026082000,
+  "mean_ntg": 0.508291482925415,
+  "wall_s": 10.4,
+  "full_row": {
+    "asp": 1.7386842966079712,
+    "azimuth": 95.0,
+    "caption": "Turbidite-lobe deposit with mean porosity 0.12, mean permeability 369 mD (log10-std 0.20), realized net-to-gross 0.51, semi-minor radius 2283 \u00b1 457 m (22.8 cells), semi-major radius 3970 m (39.7 cells), aspect ratio 1.7, thickness 12.3 \u00b1 2.5 m (12.3 cells), lobe-elongation azimuth 344\u00b0, thinning upwards.",
+    "depth_cells": 12.34849140048027,
+    "dh_ave": 12.34849140048027,
+    "dh_ave_cells": 12.34849140048027,
+    "dh_ave_m": 12.34849140048027,
+    "dh_std": 2.469698280096054,
+    "layer_type": "lobe",
+    "m": 50,
+    "ntg": 0.5125350952148438,
+    "perm_ave": 2.566741943359375,
+    "perm_std": 0.2,
+    "poro_ave": 0.12124074995517731,
+    "poro_std": 0.03,
+    "r_ave": 2283.093237876892,
+    "r_ave_cells": 22.830932378768917,
+    "r_ave_m": 2283.093237876892,
+    "r_major_cells": 39.69578360388399,
+    "r_major_m": 3969.5783603883997,
+    "r_std": 456.6186475753784,
+    "requested_ntg": 0.5262888908386231,
+    "seed": 1397526869,
+    "upthinning": true,
+    "width_cells": 45.661864757537835
+  }
+}

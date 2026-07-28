@@ -1,0 +1,117 @@
+{
+  "ensembles": {
+    "A_native": 250,
+    "B_tiles": 250,
+    "C_engine": 256
+  },
+  "mean_ntg": {
+    "A": 0.5081903686523438,
+    "B": 0.4945122375488281,
+    "C": 0.508291482925415
+  },
+  "band_split_seed": 20260815,
+  "comparisons": {
+    "B_vs_C": {
+      "abs_dntg": {
+        "value": 0.013779245376586924,
+        "band": 6.0677528381347656e-05,
+        "verdict": "outside"
+      },
+      "ntg_dist_w1": {
+        "value": 0.01377924537658691,
+        "band": 0.0010873079299926758,
+        "verdict": "outside"
+      },
+      "variogram_mae": {
+        "value": 0.012712833103691878,
+        "band": 0.004065795828837455,
+        "verdict": "outside"
+      },
+      "connectivity_mae": {
+        "value": 0.0318745331266639,
+        "band": 0.0040200283480736065,
+        "verdict": "outside"
+      },
+      "geobody_w1": {
+        "value": 0.21211109890666607,
+        "band": 0.01903961975979168,
+        "verdict": "outside"
+      },
+      "extent_w1": {
+        "value": 0.07849878512660519,
+        "band": 0.010014213826769584,
+        "verdict": "outside"
+      }
+    },
+    "A_vs_C": {
+      "abs_dntg": {
+        "value": 0.00010111427307124554,
+        "band": 6.0677528381347656e-05,
+        "verdict": "near"
+      },
+      "ntg_dist_w1": {
+        "value": 0.0023663649559021,
+        "band": 0.0010873079299926758,
+        "verdict": "outside"
+      },
+      "variogram_mae": {
+        "value": 0.014173777540508317,
+        "band": 0.004065795828837455,
+        "verdict": "outside"
+      },
+      "connectivity_mae": {
+        "value": 0.022552337427920052,
+        "band": 0.0040200283480736065,
+        "verdict": "outside"
+      },
+      "geobody_w1": {
+        "value": 0.06564596819386101,
+        "band": 0.01903961975979168,
+        "verdict": "outside"
+      },
+      "extent_w1": {
+        "value": 0.039895233007445,
+        "band": 0.010014213826769584,
+        "verdict": "outside"
+      }
+    },
+    "B_vs_A": {
+      "abs_dntg": {
+        "value": 0.013678131103515678,
+        "band": 6.0677528381347656e-05,
+        "verdict": "outside"
+      },
+      "ntg_dist_w1": {
+        "value": 0.013678131103515623,
+        "band": 0.0010873079299926758,
+        "verdict": "outside"
+      },
+      "variogram_mae": {
+        "value": 0.013387533836473748,
+        "band": 0.004065795828837455,
+        "verdict": "outside"
+      },
+      "connectivity_mae": {
+        "value": 0.031728276043499835,
+        "band": 0.0040200283480736065,
+        "verdict": "outside"
+      },
+      "geobody_w1": {
+        "value": 0.2422574206206891,
+        "band": 0.01903961975979168,
+        "verdict": "outside"
+      },
+      "extent_w1": {
+        "value": 0.09660332208353423,
+        "band": 0.010014213826769584,
+        "verdict": "outside"
+      }
+    }
+  },
+  "seam_diagnostic": {
+    "assembly_amp_at_stride40_mean": 0.009801457654709606,
+    "assembly_amp_at_stride40_max": 0.01882266044098329,
+    "engine_concat_amp_at_period64_mean": 0.011221146376601904,
+    "engine_concat_amp_at_period64_max": 0.02831014407575563
+  }
+}
