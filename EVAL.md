@@ -659,3 +659,87 @@ checkpoints; never truncate after k = 75 (finish instead). Definitive
 checkpoint selection is unchanged: argmin of the official paired
 validation protocol (batch 128, seed 20260901, K = 4) over the union of
 that environment's runs' checkpoints.)
+
+# Addendum E — MultiDiffusion assembly-consistency benchmark (frozen 2026-07-28, before computation)
+
+## E.1 Question
+
+Whether volumes assembled beyond the training extent (MultiDiffusion tiling,
+Table 6 settings) preserve the statistics of native-tile generation and of
+the engine, beyond visual seamlessness. Requested by Reviewer jfkD (Q4) and
+the Area Chair.
+
+## E.2 Environment and shared condition
+
+`channel:PV_SHOESTRING`. One parameter vector shared by all three
+ensembles: the training-split instance whose slim parameters (ntg,
+width_cells, depth_cells, mCHsinu, mFFCHprop, probAvulInside) minimize the
+Euclidean distance to the per-type training medians after min-max
+normalization with the checkpoint's `cond_stats.npz` ranges; azimuth is
+overridden to 95 degrees (midpoint of the paper's Figure-4 gradient)
+everywhere. The selected instance id and full parameter row are recorded in
+the run manifest. Training-split contact only; the §2 test reference is not
+used anywhere in this addendum.
+
+## E.3 Ensembles
+
+- (A) **native**: 250 model volumes (64, 64, 32), Table 6 inference
+  (Euler, NFE 50, CFG 3.0, empty well mask), noise seeds `20260811000 + k`.
+- (B) **assembly tiles**: 10 assemblies, 10 x 10 block grid, overlap 24
+  (the deployed Table 6 tiling), uniform conditioning per E.2, torch seed
+  `20260809000 + i` per assembly; from each 424 x 424 x 32 assembly a
+  5 x 5 grid of non-overlapping (64, 64, 32) tiles cut from the centered
+  320 x 320 region (origin cell (52, 52), stride 64) = 250 tiles.
+- (C) **engine reference**: 256 ResMill realizations at the selected
+  instance's engine parameters (azimuth 95), seeds `2026081000 + k` (amended from `20260810000 + k` before any realization was generated: the engine RNG requires seeds below 2^32),
+  engine source unmodified; published under
+  `results/assembly_reference/` as a reusable asset.
+
+## E.4 Scored metrics
+
+Identical estimators to §4 plus one addition: ensemble |dNTG|; W1 between
+per-volume NTG distributions; sill-normalized variogram MAE; connectivity
+tau(h) MAE; geobody-size W1 (log10 sizes); and body lateral-extent W1
+(log10 of each body's maximum x-y bounding-box extent, pooled) as the
+channel-length statistic. Scored comparisons: **B vs C** (headline),
+**A vs C** (native control), **B vs A** (isolated MultiDiffusion effect).
+Verdict band: split-half of (C), `default_rng(20260812)`, same estimator
+per metric, tiers as in §5.
+
+## E.5 Seam diagnostic (figure, unscored)
+
+Column-mean sand-fraction profiles along x and y for each assembly; the
+discrete-spectrum amplitude at the block-stride period (40 cells) compared
+against the same statistic computed on profiles of tiled-together engine
+volumes (which have true seams). A stride-locked periodicity in (B) that
+exceeds the engine-concatenation level indicates blending artifacts.
+
+## E.6 Standing benchmark component
+
+This addendum defines the "assembly consistency" task: a model claiming
+beyond-training-extent generation submits ensemble (B)-equivalent tiles;
+they are scored against the published (C) with the E.4 metrics and band.
+
+## E.7 Lobe tier (frozen 2026-07-28, before computation)
+
+Same design as E.2-E.5 for environment `lobe` (the multi-body
+environment), with: shared condition = the training-split lobe instance
+nearest (same normalized-distance rule) the **medians of the 180,000 indexed lobe training rows** over lobe's defined slim columns (ntg,
+width_cells, depth_cells, asp), azimuth overridden to 95 degrees; seeds:
+engine `2026082000 + k`, assemblies `20260813000 + i`, native
+`20260814000 + k`, split-half `default_rng(20260815)`; identical grid
+(10 x 10, overlap 24), tile cutting, metrics, and comparisons. Engine
+reference published under `results/assembly_reference/lobe/`.
+
+(Update 2026-07-28 06:58, pre-scoring — lobe extension divergence and
+retry: attempt 1 (4× GH200, seed 8102) trained normally through epoch 18
+(loss ≈ 0.163) then collapsed at epoch 19 (training loss flat at ≈ 1.82
+for 7 consecutive epochs, observational val rising 0.535 → 1.489); the
+run cannot improve on the 40-epoch run's validation argmin and was
+terminated; its logs, checkpoints and manifest are preserved at
+`specialist_runs/lobe_80ep_diverged_seed8102`. Following the one-retry
+convention of Addendum D.3, a single restart with torch seed 8112 is
+launched on 2× GH200 (the topology that trained the lobe 40-epoch run
+without incident), all other settings per E-2/E.3 unchanged, same
+observational watcher and truncation clause. Recorded before any retry
+checkpoint was evaluated.)
