@@ -647,3 +647,15 @@ camera-ready under the same 80-epoch recipe.
 start on the same 4-node platform immediately after the PV extension
 completes, same 80-epoch recipe and observational val watcher with the
 E-2 truncation clause; its results remain camera-ready-bound.)
+
+(Update 2026-07-27 23:20, pre-scoring — delegated truncation rule: the
+operator granted standing approval for automatic truncation of the
+extension runs. Concrete rule, fixed before the first extension
+checkpoint was evaluated: watching the observational val series v_k at
+checkpoints k = 5, 10, …, 80, stop the run if (a) k ≥ 50 and the
+5-epoch improvement (v_{k−5} − v_k) < 0.02·v_k on two consecutive
+checkpoints, or (b) k ≥ 45 and v increases on two consecutive
+checkpoints; never truncate after k = 75 (finish instead). Definitive
+checkpoint selection is unchanged: argmin of the official paired
+validation protocol (batch 128, seed 20260901, K = 4) over the union of
+that environment's runs' checkpoints.)
