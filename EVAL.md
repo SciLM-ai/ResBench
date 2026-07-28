@@ -627,3 +627,18 @@ checkpoint (pure resume, no semantic change) to free c608-122 for the
 lobe DDP pair. Both variants of the launcher and the
 DDP code path are in `scripts/specialists/` (ResFlow repo), smoke-tested
 before the switch.
+
+## Amendment E-2 — PV extension-run platform (2026-07-27, before any extension score)
+
+The fired-branch 80-epoch PV_SHOESTRING retrain (E.3) runs as 4× GH200
+DDP (c608-061, c611-041, c608-122, c622-042), global batch unchanged at
+384 (4 ranks × 96, no accumulation), peak LR/schedule/EMA per E.2 with
+the code path of Amendment E-1 (per-rank torch seeds 8101 + rank). A
+per-checkpoint validation watcher runs alongside training (batch 32, the
+E.3 paired-seed protocol); it is observational only — checkpoint
+selection remains argmin validation loss over the union of both PV runs'
+saved checkpoints. If the validation curve demonstrably plateaus or
+degrades before epoch 80, the run may be truncated with the operator's
+explicit approval; any such truncation and its evidence will be logged
+in SPECIALISTS.md. The lobe extension (also fired) is deferred to
+camera-ready under the same 80-epoch recipe.
