@@ -1,0 +1,65 @@
+{
+  "w1_sensitivity": [
+    {
+      "environment": "lobe",
+      "w1_min1": 0.24730637169973366,
+      "band_min1": 0.030491409335908458,
+      "verdict_min1": "outside",
+      "w1_min2": 0.48618789286012787,
+      "band_min2": 0.04568625674119116,
+      "verdict_min2": "outside",
+      "w1_min8": 0.11768415932742597,
+      "band_min8": 0.06567239248828279,
+      "verdict_min8": "near"
+    },
+    {
+      "environment": "pooled",
+      "w1_min1": 0.24730637169973366,
+      "band_min1": NaN,
+      "verdict_min1": "n/a",
+      "w1_min2": 0.48618789286012787,
+      "band_min2": NaN,
+      "verdict_min2": "n/a",
+      "w1_min8": 0.11768415932742597,
+      "band_min8": NaN,
+      "verdict_min8": "n/a"
+    }
+  ],
+  "compartmentalization": [
+    {
+      "environment": "lobe",
+      "ref_n": 512,
+      "ref_frac_tauz_lt_099": 0.884765625,
+      "ref_tauz_ci": [
+        0.8542,
+        0.9096
+      ],
+      "ref_frac_span": 0.333984375,
+      "ref_span_ci": [
+        0.2945,
+        0.3759
+      ],
+      "ref_largest_median": 0.2919966954772507,
+      "ref_largest_iqr": [
+        0.17217085929158854,
+        0.7297866606523494
+      ],
+      "gen_n": 512,
+      "gen_frac_tauz_lt_099": 0.947265625,
+      "gen_tauz_ci": [
+        0.9244,
+        0.9635
+      ],
+      "gen_frac_span": 0.3359375,
+      "gen_span_ci": [
+        0.2964,
+        0.3779
+      ],
+      "gen_largest_median": 0.3372038934272513,
+      "gen_largest_iqr": [
+        0.20756475256353385,
+        0.7521824026395113
+      ]
+    }
+  ]
+}
