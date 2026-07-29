@@ -1,0 +1,91 @@
+=== [1/5] official paired val eval on 80-run checkpoints ===
+env=lobe  val subset=10000  K=4  seed=20260901
+epoch   5: val loss 1.212683  (n=10000)
+epoch  10: val loss 0.831666  (n=10000)
+epoch  15: val loss 0.578150  (n=10000)
+epoch  20: val loss 0.754195  (n=10000)
+epoch  25: val loss 0.636282  (n=10000)
+epoch  30: val loss 0.482321  (n=10000)
+epoch  35: val loss 0.432930  (n=10000)
+epoch  40: val loss 0.365811  (n=10000)
+epoch  45: val loss 0.297561  (n=10000)
+epoch  50: val loss 0.252615  (n=10000)
+epoch  55: val loss 0.226801  (n=10000)
+epoch  60: val loss 0.209346  (n=10000)
+epoch  65: val loss 0.195951  (n=10000)
+epoch  70: val loss 0.185129  (n=10000)
+epoch  75: val loss 0.176369  (n=10000)
+epoch  80: val loss 0.169334  (n=10000)
+
+Best: epoch 80 (0.169334)   last: epoch 80 (0.169334)
+ANTI-UNDERTRAINING: FIRES (best == final epoch)
+Saved: /scratch/08405/ilgar/specialist_runs/lobe_80ep_r2/checkpoints/val_losses.json
+UNION_ARGMIN run=80 epoch=80 val=0.169334 ckpt=/scratch/08405/ilgar/specialist_runs/lobe_80ep_r2/checkpoints/inference_epoch080.pt
+=== [2/5] generation (512, Table 6, offset manifest) ===
+self-test OK: replica sampler is bit-identical to FlowMatching.sample
+lobe k=0 rows 0-255: 57s elapsed
+lobe k=0 rows 256-511: 114s elapsed
+lobe: saved (512, 64, 64, 32) ntg_mean=0.4834
+done: 512 volumes in 117.0s -> /work/08405/ilgar/vista/resbench_eval/specialist_lobe_ext/generation_manifest_a.json
+=== [3/5] ResBench scoring ===
+| environment | |dNTG| | variogram MAE/sill | connectivity MAE | geobody W1 (log10) | |d largest frac| | well mismatch % |
+|---|---|---|---|---|---|---|
+| lobe | 0.0194 (inside; band 0.0253) | 0.0414 (outside; band 0.0065) | 0.0250 (inside; band 0.0274) | 0.0447 (near; band 0.0305) | 0.0281 (inside; band 0.0386) | n/a |
+| pooled | 0.0194 (inside; band 0.0253) | 0.0414 (outside; band 0.0065) | 0.0250 (inside; band 0.0274) | 0.0447 (near; band 0.0305) | 0.0281 (inside; band 0.0386) | n/a |
+=== [4/5] posthoc ===
+## Geobody W1 vs minimum body size (post-hoc)
+
+| environment | W1 min≥1 (band) | W1 min≥2 (band) | W1 min≥8 (band) |
+|---|---|---|---|
+| lobe | 0.0447 (near; 0.0305) | 0.1296 (outside; 0.0457) | 0.0579 (inside; 0.0657) |
+| pooled | 0.0447 (n/a; —) | 0.1296 (n/a; —) | 0.0579 (n/a; —) |
+
+## Per-volume compartmentalization: reference vs ResFlow (post-hoc)
+
+| environment | % vols τ_z<0.99 ref | gen | % vols spanning z ref | gen | largest-frac median [IQR] ref | gen |
+|---|---|---|---|---|---|---|
+| lobe | 88.5% [85.4, 91.0] | 90.4% [87.6, 92.7] | 33.4% [29.4, 37.6] | 28.1% [24.4, 32.2] | 0.292 [0.172, 0.730] | 0.274 [0.179, 0.569] |
+=== [5/5] rebuild comparison ===
+channel:PV_SHOESTRING: specialist-run band == frozen band: False (expected False (index differs; frozen band used))
+lobe: specialist-run band == frozen band: True (expected True)
+| environment | source | |dNTG| | variogram MAE/sill | connectivity MAE | geobody W1 (log10) | |d largest frac| | well mismatch % |
+|---|---|---|---|---|---|---|---|
+| channel:PV_SHOESTRING | split-half band | 0.0050 | 0.0115 | 0.0014 | 0.0125 | 0.0117 | n/a |
+| channel:PV_SHOESTRING | foundation | 0.0069 (near) | 0.0202 (near) | 0.0034 (outside) | 0.0210 (near) | 0.0443 (outside) | 0.000 (inside) |
+| channel:PV_SHOESTRING | specialist (matched 40 ep) | 0.0398 (outside) | 0.1067 (outside) | 0.1326 (outside) | 0.0670 (outside) | 0.0806 (outside) | n/a* |
+| channel:PV_SHOESTRING | specialist (ext, union argmin) | 0.0438 (outside) | 0.1023 (outside) | 0.0100 (outside) | 0.1581 (outside) | 0.0638 (outside) | n/a* |
+| lobe | split-half band | 0.0253 | 0.0065 | 0.0274 | 0.0305 | 0.0386 | n/a |
+| lobe | foundation | 0.0026 (inside) | 0.0121 (near) | 0.0356 (near) | 0.0588 (near) | 0.0227 (inside) | 0.000 (inside) |
+| lobe | specialist (matched 40 ep) | 0.0271 (near) | 0.0895 (outside) | 0.0223 (inside) | 0.2473 (outside) | 0.0284 (inside) | n/a* |
+| lobe | specialist (ext, union argmin) | 0.0194 (inside) | 0.0414 (outside) | 0.0250 (inside) | 0.0447 (near) | 0.0281 (inside) | n/a* |
+
+\* Well-conditioned generation out of scope for specialists (EVAL.md Addendum E.1): exactitude is guaranteed by hard replacement independent of weights.
+PARITY channel:PV_SHOESTRING: SUBSTANTIATED
+PARITY lobe: NOT substantiated
+fig: /work/08405/ilgar/vista/codes/ResBench/results/specialists/variogram_overlay_pv_shoestring.pdf
+fig: /work/08405/ilgar/vista/codes/ResBench/results/specialists/variogram_overlay_pv_shoestring.png
+fig: /work/08405/ilgar/vista/codes/ResBench/results/specialists/conn_overlay_pv_shoestring.pdf
+fig: /work/08405/ilgar/vista/codes/ResBench/results/specialists/conn_overlay_pv_shoestring.png
+fig: /work/08405/ilgar/vista/codes/ResBench/results/specialists/geobody_cdf_pv_shoestring.pdf
+fig: /work/08405/ilgar/vista/codes/ResBench/results/specialists/geobody_cdf_pv_shoestring.png
+fig: /work/08405/ilgar/vista/codes/ResBench/results/specialists/ntg_hist_pv_shoestring.pdf
+fig: /work/08405/ilgar/vista/codes/ResBench/results/specialists/ntg_hist_pv_shoestring.png
+fig: /work/08405/ilgar/vista/codes/ResBench/results/specialists/variogram_overlay_lobe.pdf
+fig: /work/08405/ilgar/vista/codes/ResBench/results/specialists/variogram_overlay_lobe.png
+fig: /work/08405/ilgar/vista/codes/ResBench/results/specialists/conn_overlay_lobe.pdf
+fig: /work/08405/ilgar/vista/codes/ResBench/results/specialists/conn_overlay_lobe.png
+fig: /work/08405/ilgar/vista/codes/ResBench/results/specialists/geobody_cdf_lobe.pdf
+fig: /work/08405/ilgar/vista/codes/ResBench/results/specialists/geobody_cdf_lobe.png
+fig: /work/08405/ilgar/vista/codes/ResBench/results/specialists/ntg_hist_lobe.pdf
+fig: /work/08405/ilgar/vista/codes/ResBench/results/specialists/ntg_hist_lobe.png
+| environment | source | frac τ_z<0.99 [95% CI] | floor-to-surface span frac [95% CI] | largest-body frac median [IQR] |
+|---|---|---|---|---|
+| channel:PV_SHOESTRING | reference | 0.287 [0.250, 0.328] | 0.740 [0.701, 0.776] | 0.995 [0.903, 0.998] |
+| channel:PV_SHOESTRING | foundation | 0.270 [0.233, 0.310] | 0.852 [0.818, 0.880] | 0.994 [0.980, 0.998] |
+| channel:PV_SHOESTRING | specialist (40 ep) | 1.000 [0.993, 1.000] | 0.783 [0.746, 0.817] | 0.838 [0.764, 0.912] |
+| channel:PV_SHOESTRING | specialist (ext) | 0.398 [0.357, 0.441] | 0.943 [0.920, 0.960] | 0.990 [0.977, 0.995] |
+| lobe | reference | 0.885 [0.854, 0.910] | 0.334 [0.294, 0.376] | 0.292 [0.172, 0.730] |
+| lobe | foundation | 0.822 [0.787, 0.853] | 0.373 [0.332, 0.416] | 0.295 [0.170, 0.830] |
+| lobe | specialist (40 ep) | 0.947 [0.924, 0.964] | 0.336 [0.296, 0.378] | 0.337 [0.208, 0.752] |
+| lobe | specialist (ext) | 0.904 [0.876, 0.927] | 0.281 [0.244, 0.322] | 0.274 [0.179, 0.569] |
+LOBE80_FINALIZE_DONE best_run=80 best_epoch=80 best_val=0.169334

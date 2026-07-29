@@ -34,7 +34,7 @@
     "columns": {
       "abs_dntg": {
         "foundation": "inside",
-        "specialist": "near",
+        "specialist": "inside",
         "foundation_at_least_as_good": true
       },
       "variogram_mae": {
@@ -49,7 +49,7 @@
       },
       "geobody_w1": {
         "foundation": "near",
-        "specialist": "outside",
+        "specialist": "near",
         "foundation_at_least_as_good": true
       },
       "abs_dlargest_frac": {

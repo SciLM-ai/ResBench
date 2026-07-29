@@ -1,14 +1,13 @@
 # Foundation vs specialist comparison — results (EVAL.md Addendum E)
 
-Status 2026-07-28 03:00 CDT. Protocol: EVAL.md Addendum E (frozen before
-training) + Amendments E-1/E-2. Matched-exposure (40-epoch) specialist
-results are final. The pre-registered anti-undertraining rule (E.3)
-**fired for both environments** (best validation loss at the final
-checkpoint in both cases). The PV_SHOESTRING 80-epoch extension is
-**complete and scored** (below); the delegated truncation rule never
-triggered (validation still improving at every checkpoint through 80),
-so the run used its full registered budget. The lobe extension is
-queued (Amendment E-2 update) and pending launch. All specialist artifacts in
+Status 2026-07-28 22:15 CDT — **all runs complete and scored.**
+Protocol: EVAL.md Addendum E (frozen before training) + Amendments
+E-1/E-2. The pre-registered anti-undertraining rule (E.3) fired for
+both environments; both 80-epoch extensions are complete (PV directly;
+lobe after one logged divergence and the registered single seed-retry).
+The delegated truncation rule never triggered in either extension
+(validation still improving at every checkpoint through 80), so both
+used their full registered budget. All specialist artifacts in
 `results/specialists/`; assets: `comparison.parquet`, `comparison.md`,
 figures (PDF+PNG), `compartmentalization.{md,json}`, `parity.json`.
 
@@ -29,6 +28,7 @@ also the final checkpoints, which is what fired the extension rule).
 | lobe | split-half band | 0.0253 | 0.0065 | 0.0274 | 0.0305 | 0.0386 | n/a |
 | lobe | foundation | 0.0026 (inside) | 0.0121 (near) | 0.0356 (near) | 0.0588 (near) | 0.0227 (inside) | 0.000 (inside) |
 | lobe | specialist (40 ep) | 0.0271 (near) | 0.0895 (outside) | 0.0223 (inside) | 0.2473 (outside) | 0.0284 (inside) | n/a\* |
+| lobe | specialist (ext, union argmin: 80-run ep 80) | 0.0194 (inside) | 0.0414 (outside) | 0.0250 (inside) | 0.0447 (near) | 0.0281 (inside) | n/a\* |
 
 \* Well-conditioned generation is out of scope for specialists (E.1):
 exactitude is guaranteed by the hard-replacement pipeline independent of
@@ -51,10 +51,19 @@ column.
   smaller in every column vs the extension specialist (|dNTG| 6.3×,
   variogram 5.1×, connectivity 2.9×, geobody W1 7.5×, largest frac
   1.4×).
-- **lobe: NOT substantiated.** The specialist's connectivity-MAE tier
-  (inside, 0.0223) exceeds the foundation's (near, 0.0356). Foundation
-  tiers are strictly better in |dNTG|, variogram MAE/sill, and geobody
-  W1; the |d largest frac| tier is equal (both inside).
+- **lobe: NOT substantiated** — against either specialist variant, and
+  in both cases on the same column: **connectivity MAE** (specialist
+  inside vs foundation near; 40 ep 0.0223, ext 0.0250, foundation
+  0.0356). Against the converged extension specialist (union argmin:
+  80-run epoch 80, official val 0.1693 vs the 40-run's 0.2110) the
+  remaining tiers are: |dNTG| tied inside (foundation better in
+  absolute, 0.0026 vs 0.0194), variogram foundation better (near vs
+  outside; 0.0121 vs 0.0414), geobody W1 tied near (specialist better
+  in absolute, 0.0447 vs 0.0588), |d largest frac| tied inside. In
+  absolute values the converged lobe specialist is better than the
+  foundation in the two body-structure columns (connectivity, geobody
+  W1) and worse in proportions and variogram, with largest-frac
+  effectively tied.
 
 ## Per-column summary (absolute values, compared descriptively)
 
@@ -95,18 +104,28 @@ plateau undershoot, under-reproduced compartmentalization tail)?
 | lobe | foundation | 0.822 [0.787, 0.853] | 0.373 [0.332, 0.416] | 0.295 [0.170, 0.830] |
 | lobe | specialist (40 ep) | 0.947 [0.924, 0.964] | 0.336 [0.296, 0.378] | 0.337 [0.208, 0.752] |
 
-The extension run reverses this reading for PV. The converged extension
-specialist reproduces — and exceeds — the over-connectivity signature:
-floor-to-surface span fraction 0.943 [0.920, 0.960] vs the foundation's
-0.852 and the reference's 0.740; largest-body-fraction median 0.990
-(reference 0.995); compartmentalized fraction 0.398 vs reference 0.287
-(the 40-ep specialist's 1.000 was an undertraining artifact). Under the
-pre-registered E.6 reading, the over-connectivity bias is therefore
-**attributable to architecture or CFG rather than to weight sharing**:
-a single-environment model with identical architecture and inference
-settings, trained to a lower validation loss than any other candidate,
-shows the same bias more strongly. The 40-ep specialists' opposite
-(over-fragmenting) deviation is explained by their EMA undertraining.
+The extension runs give an environment-dependent answer. On PV, the
+converged extension specialist reproduces — and exceeds — the
+over-connectivity signature: floor-to-surface span fraction 0.943
+[0.920, 0.960] vs the foundation's 0.852 and the reference's 0.740;
+largest-body-fraction median 0.990 (reference 0.995);
+compartmentalized fraction 0.398 vs reference 0.287 (the 40-ep
+specialist's 1.000 was an undertraining artifact). On PV, therefore,
+the over-connectivity bias is **attributable to architecture or CFG
+rather than to weight sharing**: a single-environment model with
+identical architecture and inference settings, trained to a lower
+validation loss than any other candidate, shows the same bias more
+strongly. On lobe, however, the converged extension specialist is
+close to calibrated where the foundation over-connects: span fraction
+0.281 [0.244, 0.322] vs reference 0.334 (foundation 0.373),
+compartmentalized fraction 0.904 vs reference 0.885 (foundation
+0.822), largest median 0.274 vs reference 0.292. Stated per
+environment: the signature is architecture/CFG-linked in the channel
+environment; in the multi-body environment a converged specialist
+avoids the foundation's mild over-connection, so weight sharing (or
+multi-environment training) remains a candidate contributor there.
+The 40-ep specialists' over-fragmenting deviations are explained by
+EMA undertraining in both environments.
 
 ## Anti-undertraining rule outcomes (E.3) and EMA context
 
@@ -129,7 +148,19 @@ shows the same bias more strongly. The 40-ep specialists' opposite
   (epoch 80); no further extension is registered — disclosed. At 80
   epochs the run spans 18,720 steps ≈ 1.9 EMA time constants (≈ 15%
   stale fraction), the same EMA position as the lobe 40-ep run.
-- Lobe 80-epoch retrain queued (Amendment E-2 update), pending launch.
+- Lobe branch: attempt 1 (4× GH200, seed 8102) trained normally through
+  epoch 18 then collapsed at epoch 19 (training loss flat at ≈ 1.82 for
+  7 epochs, observational val rising); terminated and preserved at
+  `specialist_runs/lobe_80ep_diverged_seed8102`; one registered
+  seed-retry (8112, 2× GH200) trained cleanly through the same regime
+  (a transient recovered excursion at epoch 14) and completed 80/80.
+  Official paired validation: 1.213 (ep 5) → 0.366 (40) → 0.176 (75) →
+  0.1693 (80), monotone after the excursion washout; truncation rule
+  never triggered; validation still improving at the terminal budget
+  (disclosed, as for PV). Union argmin selected the 80-run epoch-80
+  checkpoint (md5 `611b747da72399b5b624abc9857ccfe8`; run manifest in
+  `/scratch/08405/ilgar/specialist_runs/lobe_80ep_r2/`). Lobe ext mean
+  NTG 0.4834 vs reference 0.5028 (40-ep: 0.4757).
 
 ## Run manifests and provenance
 
@@ -192,5 +223,12 @@ shows the same bias more strongly. The 40-ep specialists' opposite
 - PV extension: validation still improving at the terminal 80-epoch
   budget (0.222 → 0.2085 over the last 5 epochs); the registered
   protocol ends at 80, disclosed above.
+- Lobe 80-run attempt 1 diverged at epoch 19 (see E.3 outcomes above);
+  the registered single seed-retry completed cleanly. Both 80-runs
+  (PV and lobe attempt 2) showed one transient recovered loss
+  excursion each (epochs 10 and 14 respectively) during the stretched
+  schedule's peak-LR plateau — a regime the 40-epoch recipe's earlier
+  LR decay never enters; noted as a property of the extended recipe at
+  this batch size.
 - Wave 2 (delta, channel:SH_DISTAL) not started; listed as planned in
   E.1.
