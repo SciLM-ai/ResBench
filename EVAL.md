@@ -777,3 +777,15 @@ unchanged: global batch 384 as two concurrent 4× GH200 DDP groups (job
 delegated truncation clause, single seed-retry on divergence, E.4 noise
 offset (+500000), validation-argmin selection, frozen-band verdicts.
 Recorded before any wave-3 training step.
+
+## Amendment E-5 — Wave 4 execution (2026-07-31, before wave-4 training)
+
+Wave 4 completes the specialist sweep over all eight environments:
+`channel:SH_PROXIMAL` (torch seed 8107) and `channel:MEANDER_OXBOW`
+(seed 8108), 80-epoch budget directly per the standing operator
+decision, all other settings per E.2/E-2/E-3/E-4 unchanged (global
+batch 384, two 4× GH200 groups launched per group as its wave-3
+pipeline completes, observational watchers, delegated truncation
+clause, single seed-retry on divergence, E.4 noise offset,
+validation-argmin selection, frozen-band verdicts). Recorded before any
+wave-4 training step.
