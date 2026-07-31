@@ -789,3 +789,65 @@ pipeline completes, observational watchers, delegated truncation
 clause, single seed-retry on divergence, E.4 noise offset,
 validation-argmin selection, frozen-band verdicts). Recorded before any
 wave-4 training step.
+
+---
+
+# Addendum F — MPS and GenAI acceptance-check extensions (frozen 2026-07-31, before computation)
+
+Post-hoc batch 2 (Boisvert et al. 2010; Merzoug et al. 2025). CPU-only on
+existing volumes except F.4's 512 generations. Master table unchanged.
+Split-half machinery applied wherever a null band is meaningful; verdicts
+as §5 (inside ≤ band, near ≤ 2×, outside).
+
+**F.1 Multiple-point histograms.** All overlapping 2×2×2 binary patterns
+per volume (63×63×31 per volume); pattern code = Σ v(x+i, y+j, z+k)·2^(4i+2j+k),
+(i,j,k) ∈ {0,1}³ — 256 bins. Pooled histogram per environment for the
+aligned reference and ensemble-(a) stacks; metric = Jensen-Shannon
+divergence (base 2) between normalized pooled histograms; band =
+reference split-half JSD (rng [20260813, env_index], 256/256 halves).
+Figure: top-20 reference patterns for the two environments with largest JSD.
+
+**F.2 Runs statistics.** Maximal sand run lengths along z per (x, y)
+column, and along x (control), pooled per environment. Report median, p90,
+and W1(ref, gen) on the run-length distribution; band = split-half W1 and
+|Δ median| (same rng family [20260813, ·]). An explicit statement connects
+the sign of the vertical-runs shift to the γ_z plateau undershoot.
+
+**F.3 Reliability diagram (accuracy-plot analog).** For each Addendum C
+condition (both tiers, all with engine-conditional references): off-well
+voxels binned by model p̂ (K = 128) into deciles; per bin the mean
+engine-conditional sand frequency; ECE = Σ_b w_b |mean p̂_b − freq_b|
+(w_b = bin voxel fraction). Pooled per environment over its two
+conditions. An *unconditional* version from the Addendum B ensembles
+(64 conditions, model K = 128 vs engine N = 256) is reported alongside and
+labeled as such. Band: engine self-ECE from split halves of the engine
+ensemble (rng [20260814, condition_index]). Well voxels are excluded
+(hard replacement makes them trivially calibrated).
+
+**F.4 Memorization / novelty check.** 64 training-split rows per
+environment (rng [20260812, env_index] over the env's rows sorted by
+(shard_dir, sample_idx)); one generation each, Table 6 settings, empty
+mask, noise seed drawn per row from the same rng. Metrics: (i)
+distribution of voxel agreement between each generation and its
+corresponding training volume; reference level = mean pairwise agreement
+among same-parameter engine realizations (200 pairs subsampled from the
+Addendum C modal pools, rng [20260815, env_index]); the engine
+regeneration at the exact (params, seed) equals the stored volume
+bit-for-bit (validated), i.e. the memorization ceiling is 1.0 by
+construction and any generation approaching it is flagged. (ii) Classical
+MDS (eigendecomposition of the double-centered squared-distance matrix)
+of per-volume statistics vectors [NTG, largest-body fraction,
+log10(1 + body count), γ_z plateau (mean of lags 13–16), γ_x(16), median
+z-run length], z-scored per environment, for training-64 / generated-64 /
+reference-64 (first 64 aligned reference rows). Purpose: verify novelty.
+
+**F.5 Artifact rate.** Artifacts = 6-connected sand bodies < 8 voxels.
+Reference vs ensemble (a): mean artifacts/volume per environment, band =
+split-half discrepancy (rng [20260816, env_index]). Ensemble (b): mean
+artifacts/volume and fraction of volumes with ≥ 1 artifact vs well count
+(1/2/3) with Wilson 95% CIs; an explicit statement on whether the rate
+rises with conditioning density (Merzoug failure mode) or stays flat.
+
+**F.6 Coverage map.** RESULTS.md ends with a factual table mapping every
+check in Leuangthong et al. (2004), Boisvert et al. (2010), and Merzoug et
+al. (2025) to its implementation (section/figure) or "deferred (dynamic)".
