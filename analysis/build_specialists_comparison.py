@@ -33,7 +33,15 @@ import matplotlib.pyplot as plt                            # noqa: E402
 
 EVAL = Path('/work/08405/ilgar/vista/resbench_eval')
 OUT = RB / 'results' / 'specialists'
-ENVS = [('channel:PV_SHOESTRING', 'pv_shoestring'), ('lobe', 'lobe')]
+# (env, tag, label of the {tag}_metrics.parquet row). Wave 1 trained a
+# matched-exposure 40-ep run (+ _ext extension files); wave 2 trained at
+# the 80-epoch budget directly (operator decision, EVAL.md E-3 update).
+ENVS = [
+    ('channel:PV_SHOESTRING', 'pv_shoestring', 'specialist (matched 40 ep)'),
+    ('lobe', 'lobe', 'specialist (matched 40 ep)'),
+    ('delta', 'delta_80ep', 'specialist (80 ep, direct)'),
+    ('channel:SH_DISTAL', 'sh_distal_80ep', 'specialist (80 ep, direct)'),
+]
 
 CELL_LABELS = {
     'abs_dntg': '|dNTG|',
@@ -52,7 +60,7 @@ def load_master():
 
 def comparison_table(master):
     rows = []
-    for env, tag in ENVS:
+    for env, tag, label in ENVS:
         m = master[master['environment'] == env].iloc[0]
         s = pd.read_parquet(OUT / f'{tag}_metrics.parquet')
         s = s[s['environment'] == env].iloc[0]
@@ -72,7 +80,7 @@ def comparison_table(master):
                      **{c: float(m[c]) for c in CELLS},
                      **{f'{c}_verdict': str(m[f'{c}_verdict']) for c in CELLS},
                      'well_mismatch': f"{m['well_mismatch_pct']:.3f} ({m['well_verdict']})"})
-        rows.append({'environment': env, 'source': 'specialist (matched 40 ep)',
+        rows.append({'environment': env, 'source': label,
                      **{c: float(s[c]) for c in CELLS},
                      **{f'{c}_verdict': verdict(float(s[c]), band[c]) for c in CELLS},
                      'well_mismatch': 'n/a*'})
@@ -113,7 +121,7 @@ def parity_outcome(table):
     """E.5 criterion: foundation tier >= specialist tier in EVERY column."""
     rank = {'inside': 2, 'near': 1, 'outside': 0}
     out = {}
-    for env, _ in ENVS:
+    for env, _, _ in ENVS:
         f = table[(table.environment == env) & (table.source == 'foundation')].iloc[0]
         srows = table[(table.environment == env)
                       & (table.source.str.startswith('specialist'))]
@@ -224,14 +232,14 @@ def compartmentalization():
              'floor-to-surface span frac [95% CI] | largest-body frac median [IQR] |',
              '|---|---|---|---|---|']
     blob = {}
-    for env, tag in ENVS:
+    for env, tag, _ in ENVS:
         m = mrows[env]
         sp = json.load(open(OUT / f'posthoc_{tag}' / 'posthoc_geobody.json'))
         s = {r['environment']: r for r in sp['compartmentalization']}[env]
         assert np.isclose(s['ref_frac_tauz_lt_099'], m['ref_frac_tauz_lt_099']), \
             f'{env}: reference mismatch between master and specialist posthoc'
         entries = [('reference', m, 'ref'), ('foundation', m, 'gen'),
-                   ('specialist (40 ep)', s, 'gen')]
+                   ('specialist', s, 'gen')]
         ext_dir = OUT / f'posthoc_{tag}_ext'
         if (ext_dir / 'posthoc_geobody.json').exists():
             xp = json.load(open(ext_dir / 'posthoc_geobody.json'))
@@ -272,7 +280,7 @@ def main():
         print(f"PARITY {e}: {'SUBSTANTIATED' if p['substantiated'] else 'NOT substantiated'}")
 
     mrep = np.load(RB / 'results' / 'report.npy', allow_pickle=True)[0]
-    for env, tag in ENVS:
+    for env, tag, _ in ENVS:
         srep = np.load(OUT / f'{tag}_report.npy', allow_pickle=True)[0]
         for p in overlay_curves(env, tag, mrep, srep):
             print('fig:', p)
