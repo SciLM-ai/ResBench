@@ -765,3 +765,15 @@ any checkpoint, and preserved at `*_aborted40`. Selection per E.3 is
 the validation argmin over each environment's completed runs.
 Matched-exposure 40-epoch runs for these environments may be added
 later; their absence from any interim wave-2 table will be marked.)
+
+## Amendment E-4 — Wave 3 execution (2026-07-31, before wave-3 training)
+
+Wave 3 extends the specialist comparison to `channel:CB_LABYRINTH`
+(torch seed 8105) and `channel:CB_JIGSAW` (seed 8106), at the 80-epoch
+budget directly per the standing operator decision recorded in the E-3
+update (no 40-epoch stage), all other settings per E.2/E-2/E-3
+unchanged: global batch 384 as two concurrent 4× GH200 DDP groups (job
+876236), warmup 4 / cosine T_max 76, observational watchers with the
+delegated truncation clause, single seed-retry on divergence, E.4 noise
+offset (+500000), validation-argmin selection, frozen-band verdicts.
+Recorded before any wave-3 training step.
