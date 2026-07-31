@@ -693,7 +693,7 @@ used anywhere in this addendum.
 - (C) **engine reference**: 256 ResMill realizations at the selected
   instance's engine parameters (azimuth 95), seeds `2026081000 + k` (amended from `20260810000 + k` before any realization was generated: the engine RNG requires seeds below 2^32),
   engine source unmodified; published under
-  `results/assembly_reference/` as a reusable asset.
+  `references/assembly/` as a reusable asset.
 
 ## E.4 Scored metrics
 
@@ -729,7 +729,7 @@ width_cells, depth_cells, asp), azimuth overridden to 95 degrees; seeds:
 engine `2026082000 + k`, assemblies `20260813000 + i`, native
 `20260814000 + k`, split-half `default_rng(20260815)`; identical grid
 (10 x 10, overlap 24), tile cutting, metrics, and comparisons. Engine
-reference published under `results/assembly_reference/lobe/`.
+reference published under `references/assembly/lobe/`.
 
 (Update 2026-07-28 06:58, pre-scoring — lobe extension divergence and
 retry: attempt 1 (4× GH200, seed 8102) trained normally through epoch 18

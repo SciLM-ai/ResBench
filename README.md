@@ -1,70 +1,86 @@
 # ResBench
 
-Geostatistical minimum-acceptance benchmark for generative models of binary
-sand/shale reservoir facies, built for the SiliciclasticReservoirs dataset
+A minimal, self-contained benchmark for generative models of binary
+sand/shale reservoir facies, built on the SiliciclasticReservoirs dataset
 (64×64×32 int8 volumes, 8 depositional environments). Model-agnostic: it
 scores **directories of saved volumes** and imports nothing from any
-generative model or data engine.
+generative model or data engine. The core is ~800 lines of Python with four
+dependencies; all reference data needed for scoring ships in this repo
+(~26 MB). Metrics follow the minimum acceptance criteria of Leuangthong et
+al. (2004) with categorical/MPS extensions (Boisvert et al., 2010) and
+GenAI-specific checks (Merzoug et al., 2025).
 
-The frozen protocol — ensembles, metric definitions, inference settings,
-acceptance criterion — is [EVAL.md](EVAL.md). Metrics follow the minimum
-acceptance criteria of Leuangthong et al. (2004) with categorical/MPS
-extensions (Boisvert et al., 2010) and GenAI-specific checks (Merzoug et
-al., 2025): distribution recovery (facies proportions, indicator variograms,
-connectivity, geobody statistics) and data exactitude at conditioning wells,
-all judged against the data engine's own split-half Monte-Carlo noise band.
+The frozen protocol — every metric definition, seed, ensemble size, and
+acceptance criterion, fixed before computation — is [EVAL.md](EVAL.md).
+[RESULTS.md](RESULTS.md) is the worked example: the full evaluation of the
+ResFlow foundation model.
+
+## Benchmark components
+
+| component | protocol | reference data |
+|---|---|---|
+| Geostatistical master table — NTG, indicator variograms, connectivity τ(h), geobody statistics, well exactitude; verdicts vs the engine's split-half noise band | EVAL.md §1–8 | test-split ensemble (from the dataset) |
+| Unconditional entropy calibration — is ensemble variability the right amount, per environment? | Addendum B | `references/entropy_unconditional/` (64 conditions) |
+| Well-conditional entropy calibration — the same, given well data; exact engine-conditional ensembles, no rejection sampling ever needed | Addendum C | `references/well_conditional/` (16 wells × 50–287 realizations) |
+| MultiDiffusion assembly consistency — do statistics survive large-domain tiled generation? | Addendum E | `references/assembly/` |
+| Baseline protocol | Addendum D | `results/baseline/` |
 
 ## Install
 
 ```bash
-conda create -n resbench python=3.12 -y && conda activate resbench
-pip install -e .
+pip install -e .          # numpy, scipy, pandas, pyarrow, matplotlib
+pytest tests/             # metrics verified against brute force
 ```
 
-## Usage
+## Score a model
+
+Save your model's volumes as npz shards (`ids` + `volumes`, int8 {0,1},
+one subdirectory per environment — full contract in EVAL.md §8), then:
 
 ```bash
-python -m resbench.run \
-    --pred-dir  /path/ensemble_a       # generated volumes (dirs per env slug)
-    --ref-dir   /path/reference        # reference volumes, same layout
-    --out       results/metrics.parquet \
-    --well-pred-dir /path/ensemble_b   # optional: well-conditioned ensemble
-    --mask-dir  /path/ensemble_b_masks # optional: its well masks
-    --manifest  /path/manifest.csv     # optional: well-config per row id
-    --figures                          # render the three EVAL.md figures
+python -m resbench.run --pred-dir YOUR_VOLUMES --ref-dir REFERENCE \
+    --out results/metrics.parquet --figures
 ```
 
-Outputs beside `--out`: `metrics.parquet` + `metrics.md` (master table with
-split-half-band verdicts), `report.npy` (all curves/CIs), optional
-`well_exactitude.json` and figures (PDF + PNG).
+Output: the master table (parquet + markdown) with inside/near/outside
+verdicts against the engine's own Monte-Carlo noise band, bootstrap CIs,
+and publication figures. For the calibration components, generate K = 128
+samples per condition listed in the `references/` metadata (each npz
+carries the well pattern, mask, and parameter pointer) and compare
+voxelwise entropy — see `paper/analysis/` for worked implementations.
 
-### Input contract
+## Adapting to your own dataset
 
-Each ensemble root has one subdirectory per environment slug
-(`lobe`, `channel_PV_SHOESTRING`, …) holding `*.npz` shards with keys
-`ids` (strings `"{layer_type}|{shard_dir}|{sample_idx}"`) and `volumes`
-(int8, `(N, 64, 64, 32)`, values {0, 1}). Mask directories use key `masks`
-(uint8, 1 = known). Rows are joined on `ids`; a `#k` suffix on prediction
-ids (multiple samples per condition) is stripped for the join.
+The metrics, split-half band logic, and CLI are shape- and domain-agnostic.
+To benchmark on different data:
 
-## Tests
+1. Edit **one file**, `resbench/__init__.py`: set `VOLUME_SHAPE`,
+   `MAX_LAGS` (half of each axis extent), and your category list
+   (`LAYER_TYPES`).
+2. Build your reference ensemble: a held-out sample of real/simulated
+   volumes per category, saved in the same npz format.
+3. Run the same CLI. The split-half band machinery automatically defines
+   "matching" at your reference ensemble's own noise level.
 
-```bash
-pytest tests/   # every metric is verified against brute force on 8x8x8 arrays
-```
+The entropy-calibration components additionally require an ensemble
+generator for your data (any simulator that can redraw realizations under
+fixed parameters); the mining approach is described in EVAL.md Addendum C.
 
 ## Repository layout
 
 ```
-EVAL.md               frozen benchmark protocol (read this first)
-RESULTS.md            ResFlow evaluation results (master table + figures)
-resbench/metrics.py   NTG, indicator variograms, connectivity, geobodies, exactitude
-resbench/stats.py     ensemble summaries, split-half null band, bootstrap, verdicts
-resbench/io.py        volume-directory loading / id alignment
-resbench/figures.py   the three publication figures
-resbench/run.py       CLI entry point (python -m resbench.run)
+EVAL.md            frozen protocol (read this first)
+RESULTS.md         worked example: ResFlow scored on all components
+resbench/          the package (~800 lines): metrics, stats, io, figures, CLI
+tests/             brute-force verification of every metric
+references/        benchmark reference data (self-contained, ~26 MB)
+results/           the worked example's outputs (tables, figures, manifests)
+paper/analysis/    one-off study scripts behind RESULTS.md (archaeology)
 ```
 
-Volume generation for ResFlow lives in the ResFlow repo
-(`scripts/rebuttal_eval/`) and communicates with ResBench only through saved
-volume directories.
+Raw engine draw pools (~17 GB; for mining new well patterns or extending
+the references) are published separately with the dataset release.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

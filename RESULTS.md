@@ -278,7 +278,7 @@ benchmark component: 8 fresh manifest conditions per environment
 (rows 4–11, disjoint from Addendum A), model K = 128 empty-mask samples vs
 engine N = 256 unconditional realizations per condition, compared over all
 voxels. The engine reference (per-condition voxelwise p̂, float16) is
-**published in `results/entropy_reference/`** so future models can be
+**published in `references/entropy_unconditional/`** so future models can be
 scored on this component without running ResMill. Full table:
 `results/posthoc/uncond_calibration.md`; per-condition strip plot
 `uncond_calibration.{pdf,png}`.
@@ -311,7 +311,7 @@ in only 2 environments) is closed by **modal-pattern rejection**: carve the
 histogram the patterns, and condition on the most frequent — every
 matching draw is an exact conditional sample, at zero extra generation
 cost beyond stored pools. Two tiers are published in
-`results/well_conditional_reference/` (per environment: accepted volumes,
+`references/well_conditional/` (per environment: accepted volumes,
 pattern, well mask, parameter pointer), so **this benchmark component
 never requires rejection again**:
 
@@ -409,7 +409,7 @@ trained on 90,000 volumes of this facies style.
 ## Assembly-consistency benchmark (EVAL.md Addendum E — scored)
 
 Full outputs: `results/assembly/`; engine reference published in
-`results/assembly_reference/`. Three ensembles at ONE shared condition (the
+`references/assembly/`. Three ensembles at ONE shared condition (the
 median-nearest training instance `channel_pv_shoestring/shard_0236|20`,
 azimuth 95): (A) 250 native model volumes, (B) 250 tiles cut from ten
 424x424x32 MultiDiffusion assemblies at the deployed Table 6 tiling
@@ -442,7 +442,7 @@ all ten seeds (per-assembly NTG 0.2796-0.2802).
 Same design, environment `lobe` (multi-body), shared condition
 `lobe/shard_0002|512` (nearest the 180k-row training medians), azimuth 95.
 Outputs: `results/assembly/lobe_*`; engine reference
-`results/assembly_reference/lobe/`.
+`references/assembly/lobe/`.
 
 | comparison | \|dNTG\| | NTG-dist W1 | vario MAE | conn. MAE | geobody W1 | extent W1 |
 |---|---|---|---|---|---|---|
