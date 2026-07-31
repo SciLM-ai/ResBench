@@ -1,0 +1,48 @@
+=== [1/4] validation losses (channel:CB_JIGSAW) ===
+env=channel:CB_JIGSAW  val subset=7500  K=4  seed=20260901
+epoch   5: val loss 1.333559  (n=7500)
+epoch  10: val loss 1.007411  (n=7500)
+epoch  15: val loss 0.742852  (n=7500)
+epoch  20: val loss 0.558734  (n=7500)
+epoch  25: val loss 0.437898  (n=7500)
+epoch  30: val loss 0.385402  (n=7500)
+epoch  35: val loss 0.590431  (n=7500)
+epoch  40: val loss 0.665462  (n=7500)
+epoch  45: val loss 0.695779  (n=7500)
+epoch  50: val loss 0.677627  (n=7500)
+epoch  55: val loss 0.612506  (n=7500)
+epoch  60: val loss 0.527058  (n=7500)
+epoch  65: val loss 0.444220  (n=7500)
+epoch  70: val loss 0.378719  (n=7500)
+epoch  75: val loss 0.330270  (n=7500)
+epoch  80: val loss 0.293631  (n=7500)
+
+Best: epoch 80 (0.293631)   last: epoch 80 (0.293631)
+ANTI-UNDERTRAINING: FIRES (best == final epoch)
+Saved: /scratch/08405/ilgar/specialist_runs/cb_jigsaw_80ep/checkpoints/val_losses.json
+BEST_EPOCH=80 ANTI_UNDERTRAINING_FIRES=YES CKPT=/scratch/08405/ilgar/specialist_runs/cb_jigsaw_80ep/checkpoints/inference_epoch080.pt
+=== [2/4] generation (512 volumes, Table 6, seed offset +500000) ===
+self-test OK: replica sampler is bit-identical to FlowMatching.sample
+channel:CB_JIGSAW k=0 rows 0-255: 57s elapsed
+channel:CB_JIGSAW k=0 rows 256-511: 114s elapsed
+channel:CB_JIGSAW: saved (512, 64, 64, 32) ntg_mean=0.3230
+done: 512 volumes in 116.7s -> /work/08405/ilgar/vista/resbench_eval/specialist_cb_jigsaw_80ep/generation_manifest_a.json
+=== [3/4] ResBench scoring ===
+| environment | |dNTG| | variogram MAE/sill | connectivity MAE | geobody W1 (log10) | |d largest frac| | well mismatch % |
+|---|---|---|---|---|---|---|
+| channel:CB_JIGSAW | 0.0650 (outside; band 0.0039) | 0.0521 (outside; band 0.0058) | 0.0048 (outside; band 0.0010) | 0.0168 (outside; band 0.0059) | 0.0156 (outside; band 0.0058) | n/a |
+| pooled | 0.0650 (outside; band 0.0039) | 0.0521 (outside; band 0.0058) | 0.0048 (outside; band 0.0010) | 0.0168 (outside; band 0.0059) | 0.0156 (outside; band 0.0058) | n/a |
+=== [4/4] compartmentalization posthoc ===
+## Geobody W1 vs minimum body size (post-hoc)
+
+| environment | W1 min≥1 (band) | W1 min≥2 (band) | W1 min≥8 (band) |
+|---|---|---|---|
+| channel:CB_JIGSAW | 0.0168 (outside; 0.0059) | 0.0651 (outside; 0.0086) | 0.1914 (outside; 0.0322) |
+| pooled | 0.0168 (n/a; —) | 0.0651 (n/a; —) | 0.1914 (n/a; —) |
+
+## Per-volume compartmentalization: reference vs ResFlow (post-hoc)
+
+| environment | % vols τ_z<0.99 ref | gen | % vols spanning z ref | gen | largest-frac median [IQR] ref | gen |
+|---|---|---|---|---|---|---|
+| channel:CB_JIGSAW | 29.5% [25.7, 33.6] | 49.6% [45.3, 53.9] | 95.3% [93.1, 96.8] | 94.5% [92.2, 96.2] | 0.996 [0.989, 0.998] | 0.990 [0.977, 0.996] |
+PIPELINE_DONE tag=cb_jigsaw_80ep best_epoch=80 fires=YES

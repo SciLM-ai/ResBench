@@ -1,0 +1,48 @@
+=== [1/4] validation losses (channel:SH_PROXIMAL) ===
+env=channel:SH_PROXIMAL  val subset=5000  K=4  seed=20260901
+epoch   5: val loss 1.477738  (n=5000)
+epoch  10: val loss 1.230545  (n=5000)
+epoch  15: val loss 0.987799  (n=5000)
+epoch  20: val loss 0.774305  (n=5000)
+epoch  25: val loss 0.596138  (n=5000)
+epoch  30: val loss 0.471987  (n=5000)
+epoch  35: val loss 0.388198  (n=5000)
+epoch  40: val loss 0.331773  (n=5000)
+epoch  45: val loss 0.292908  (n=5000)
+epoch  50: val loss 0.265386  (n=5000)
+epoch  55: val loss 0.244560  (n=5000)
+epoch  60: val loss 0.227841  (n=5000)
+epoch  65: val loss 0.214088  (n=5000)
+epoch  70: val loss 0.202586  (n=5000)
+epoch  75: val loss 0.192675  (n=5000)
+epoch  80: val loss 0.184139  (n=5000)
+
+Best: epoch 80 (0.184139)   last: epoch 80 (0.184139)
+ANTI-UNDERTRAINING: FIRES (best == final epoch)
+Saved: /scratch/08405/ilgar/specialist_runs/sh_proximal_80ep/checkpoints/val_losses.json
+BEST_EPOCH=80 ANTI_UNDERTRAINING_FIRES=YES CKPT=/scratch/08405/ilgar/specialist_runs/sh_proximal_80ep/checkpoints/inference_epoch080.pt
+=== [2/4] generation (512 volumes, Table 6, seed offset +500000) ===
+self-test OK: replica sampler is bit-identical to FlowMatching.sample
+channel:SH_PROXIMAL k=0 rows 0-255: 57s elapsed
+channel:SH_PROXIMAL k=0 rows 256-511: 114s elapsed
+channel:SH_PROXIMAL: saved (512, 64, 64, 32) ntg_mean=0.4485
+done: 512 volumes in 116.3s -> /work/08405/ilgar/vista/resbench_eval/specialist_sh_proximal_80ep/generation_manifest_a.json
+=== [3/4] ResBench scoring ===
+| environment | |dNTG| | variogram MAE/sill | connectivity MAE | geobody W1 (log10) | |d largest frac| | well mismatch % |
+|---|---|---|---|---|---|---|
+| channel:SH_PROXIMAL | 0.0532 (outside; band 0.0005) | 0.0421 (outside; band 0.0048) | 0.0008 (near; band 0.0005) | 0.0371 (outside; band 0.0079) | 0.0002 (inside; band 0.0019) | n/a |
+| pooled | 0.0532 (outside; band 0.0005) | 0.0421 (outside; band 0.0048) | 0.0008 (near; band 0.0005) | 0.0371 (outside; band 0.0079) | 0.0002 (inside; band 0.0019) | n/a |
+=== [4/4] compartmentalization posthoc ===
+## Geobody W1 vs minimum body size (post-hoc)
+
+| environment | W1 min≥1 (band) | W1 min≥2 (band) | W1 min≥8 (band) |
+|---|---|---|---|
+| channel:SH_PROXIMAL | 0.0371 (outside; 0.0079) | 0.1111 (outside; 0.0284) | 0.2632 (outside; 0.0289) |
+| pooled | 0.0371 (n/a; —) | 0.1111 (n/a; —) | 0.2632 (n/a; —) |
+
+## Per-volume compartmentalization: reference vs ResFlow (post-hoc)
+
+| environment | % vols τ_z<0.99 ref | gen | % vols spanning z ref | gen | largest-frac median [IQR] ref | gen |
+|---|---|---|---|---|---|---|
+| channel:SH_PROXIMAL | 2.1% [1.2, 3.8] | 2.0% [1.1, 3.6] | 99.8% [98.9, 100.0] | 99.8% [98.9, 100.0] | 0.999 [0.998, 1.000] | 0.999 [0.997, 0.999] |
+PIPELINE_DONE tag=sh_proximal_80ep best_epoch=80 fires=YES

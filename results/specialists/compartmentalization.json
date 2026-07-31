@@ -250,5 +250,221 @@
       0.9997963205019763,
       0.9999747406543854
     ]
+  },
+  "channel:CB_LABYRINTH|reference": {
+    "ref_n": 512,
+    "ref_frac_tauz_lt_099": 0.18359375,
+    "ref_tauz_ci": [
+      0.1525,
+      0.2194
+    ],
+    "ref_frac_span": 0.908203125,
+    "ref_span_ci": [
+      0.8801,
+      0.9303
+    ],
+    "ref_largest_median": 0.9975408881592089,
+    "ref_largest_iqr": [
+      0.9925679273912394,
+      0.9990509146576612
+    ]
+  },
+  "channel:CB_LABYRINTH|foundation": {
+    "gen_n": 512,
+    "gen_frac_tauz_lt_099": 0.115234375,
+    "gen_tauz_ci": [
+      0.0904,
+      0.1458
+    ],
+    "gen_frac_span": 0.951171875,
+    "gen_span_ci": [
+      0.9289,
+      0.9667
+    ],
+    "gen_largest_median": 0.9977120710254879,
+    "gen_largest_iqr": [
+      0.9944662046735395,
+      0.9990228541029218
+    ]
+  },
+  "channel:CB_LABYRINTH|specialist": {
+    "gen_n": 512,
+    "gen_frac_tauz_lt_099": 0.04296875,
+    "gen_tauz_ci": [
+      0.0285,
+      0.0642
+    ],
+    "gen_frac_span": 0.99609375,
+    "gen_span_ci": [
+      0.9859,
+      0.9989
+    ],
+    "gen_largest_median": 0.9983760619738076,
+    "gen_largest_iqr": [
+      0.9961686168909816,
+      0.9991728519704177
+    ]
+  },
+  "channel:CB_JIGSAW|reference": {
+    "ref_n": 512,
+    "ref_frac_tauz_lt_099": 0.294921875,
+    "ref_tauz_ci": [
+      0.2571,
+      0.3358
+    ],
+    "ref_frac_span": 0.953125,
+    "ref_span_ci": [
+      0.9312,
+      0.9683
+    ],
+    "ref_largest_median": 0.9956715192415164,
+    "ref_largest_iqr": [
+      0.9886753986298943,
+      0.9984393115015109
+    ]
+  },
+  "channel:CB_JIGSAW|foundation": {
+    "gen_n": 512,
+    "gen_frac_tauz_lt_099": 0.265625,
+    "gen_tauz_ci": [
+      0.2292,
+      0.3055
+    ],
+    "gen_frac_span": 0.974609375,
+    "gen_span_ci": [
+      0.957,
+      0.9851
+    ],
+    "gen_largest_median": 0.9948001541805496,
+    "gen_largest_iqr": [
+      0.9900774628190866,
+      0.9980297798496389
+    ]
+  },
+  "channel:CB_JIGSAW|specialist": {
+    "gen_n": 512,
+    "gen_frac_tauz_lt_099": 0.49609375,
+    "gen_tauz_ci": [
+      0.453,
+      0.5393
+    ],
+    "gen_frac_span": 0.9453125,
+    "gen_span_ci": [
+      0.9221,
+      0.9619
+    ],
+    "gen_largest_median": 0.9904373311983504,
+    "gen_largest_iqr": [
+      0.9768301041613069,
+      0.9961203254895259
+    ]
+  },
+  "channel:SH_PROXIMAL|reference": {
+    "ref_n": 512,
+    "ref_frac_tauz_lt_099": 0.021484375,
+    "ref_tauz_ci": [
+      0.012,
+      0.0381
+    ],
+    "ref_frac_span": 0.998046875,
+    "ref_span_ci": [
+      0.989,
+      0.9997
+    ],
+    "ref_largest_median": 0.9993040254904071,
+    "ref_largest_iqr": [
+      0.998399500421669,
+      0.9997694930357248
+    ]
+  },
+  "channel:SH_PROXIMAL|foundation": {
+    "gen_n": 512,
+    "gen_frac_tauz_lt_099": 0.009765625,
+    "gen_tauz_ci": [
+      0.0042,
+      0.0227
+    ],
+    "gen_frac_span": 0.9921875,
+    "gen_span_ci": [
+      0.9801,
+      0.997
+    ],
+    "gen_largest_median": 0.9991282806884353,
+    "gen_largest_iqr": [
+      0.9981549928870211,
+      0.9996586804712757
+    ]
+  },
+  "channel:SH_PROXIMAL|specialist": {
+    "gen_n": 512,
+    "gen_frac_tauz_lt_099": 0.01953125,
+    "gen_tauz_ci": [
+      0.0106,
+      0.0356
+    ],
+    "gen_frac_span": 0.998046875,
+    "gen_span_ci": [
+      0.989,
+      0.9997
+    ],
+    "gen_largest_median": 0.9986203252177007,
+    "gen_largest_iqr": [
+      0.9973159700098146,
+      0.999380915878475
+    ]
+  },
+  "channel:MEANDER_OXBOW|reference": {
+    "ref_n": 512,
+    "ref_frac_tauz_lt_099": 0.02734375,
+    "ref_tauz_ci": [
+      0.0164,
+      0.0454
+    ],
+    "ref_frac_span": 0.98828125,
+    "ref_span_ci": [
+      0.9747,
+      0.9946
+    ],
+    "ref_largest_median": 0.9977076905926315,
+    "ref_largest_iqr": [
+      0.9962335497522747,
+      0.9986823082158451
+    ]
+  },
+  "channel:MEANDER_OXBOW|foundation": {
+    "gen_n": 512,
+    "gen_frac_tauz_lt_099": 0.037109375,
+    "gen_tauz_ci": [
+      0.0239,
+      0.0572
+    ],
+    "gen_frac_span": 1.0,
+    "gen_span_ci": [
+      0.9926,
+      1.0
+    ],
+    "gen_largest_median": 0.9974526507847464,
+    "gen_largest_iqr": [
+      0.9965044958493904,
+      0.9982551669741812
+    ]
+  },
+  "channel:MEANDER_OXBOW|specialist": {
+    "gen_n": 512,
+    "gen_frac_tauz_lt_099": 0.134765625,
+    "gen_tauz_ci": [
+      0.1079,
+      0.1671
+    ],
+    "gen_frac_span": 1.0,
+    "gen_span_ci": [
+      0.9926,
+      1.0
+    ],
+    "gen_largest_median": 0.9927966969798334,
+    "gen_largest_iqr": [
+      0.9895450207063934,
+      0.9945500310834146
+    ]
   }
 }

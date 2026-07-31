@@ -315,3 +315,67 @@ tier difference at the fourth decimal is not meaningful.
 - Wave-2 generation manifests use the E.4 noise offset (+500000);
   self-test passed (bit-identity) in both pipelines; specialist mean
   NTG: delta 0.5934 vs reference (see report), SH_DISTAL 0.5995.
+
+---
+
+# Complete eight-environment sweep — final summary (2026-07-31)
+
+Waves 3-4 (Amendments E-4/E-5) complete the specialist sweep: every
+environment now has a converged, validation-selected 80-epoch
+specialist scored under the frozen protocol. Full table in
+`comparison.md`; per-environment figures and compartmentalization rows
+in `results/specialists/`.
+
+## Final parity outcomes (pre-registered criterion, all eight environments)
+
+| environment | parity | note |
+|---|---|---|
+| channel:PV_SHOESTRING | **SUBSTANTIATED** | vs both specialist budgets |
+| lobe | NOT substantiated | connectivity column (specialist inside vs foundation near, both budgets) — the sweep's one genuine specialist tier win |
+| delta | **SUBSTANTIATED** | foundation better in 4 of 5 columns outright |
+| channel:SH_DISTAL | NOT substantiated | saturated-band tier flip only (both models 0.0001 absolute vs band 0.0000) |
+| channel:CB_LABYRINTH | **SUBSTANTIATED** | foundation better in every column (1.6–5.6×) |
+| channel:CB_JIGSAW | **SUBSTANTIATED** | foundation better in every column; specialist |dNTG| 0.0650 is the sweep's largest proportion miss |
+| channel:SH_PROXIMAL | **SUBSTANTIATED** | foundation better in 4 of 5 columns (specialist |d largest frac| 0.0002 vs 0.0011, same tier) |
+| channel:MEANDER_OXBOW | **SUBSTANTIATED** | foundation tier ≥ everywhere |
+
+Descriptive tally over all 40 environment-metric cells (final
+specialist variant per environment): foundation better in 33, specialist
+better in 6, tied in 1. The specialist's absolute wins concentrate in
+body-structure columns (lobe connectivity/geobody, SH_DISTAL
+variogram/geobody, SH_PROXIMAL and MEANDER_OXBOW largest-frac at equal
+tier); the foundation wins all proportion (|dNTG|) comparisons, all
+eight of them.
+
+## Recurring specialist signatures across the sweep
+
+- **Proportion drift.** Six of eight specialists miss mean NTG by more
+  than the foundation, three of them badly (CB_JIGSAW 0.0650,
+  SH_PROXIMAL 0.0532, PV 0.0438); the foundation is inside the band on
+  seven of eight environments. Multi-environment training appears to
+  regularize facies proportions.
+- **Variogram degradation.** Every specialist scores outside on
+  variogram MAE/sill; the foundation is inside/near on five of eight.
+- **The two documented foundation biases are architectural, not
+  sharing-induced**: over-connection is reproduced or exceeded by
+  converged specialists in PV and delta (span fractions 0.943 and
+  0.953 vs references 0.740/0.809), and SH_DISTAL's geobody failure is
+  reproduced by its specialist (0.8747 vs 0.9709, both ≈ 7× band).
+  Lobe remains the exception where a converged specialist is
+  near-calibrated.
+
+## Wave-3/4 run manifests
+
+All 80-epoch direct runs (E-3 update budget), two concurrent 4× GH200
+groups, global batch 384 = 4×96, validation argmin = epoch 80 in every
+case (the terminal-budget improvement disclosure of E.7 applies
+throughout; the E-2 truncation rule never triggered, with one logged
+discretionary non-truncation for CB_JIGSAW's excursion-washout val bump
+at epochs 35-45, which reversed at epoch 50 as predicted):
+
+| run | seed | selected ckpt md5 | official val@80 | anomalies |
+|---|---|---|---|---|
+| cb_labyrinth_80ep | 8105 | `4eb68fb8c52502802e90fbc1c95b3d22` | 0.1842 | none (cleanest run of the study) |
+| cb_jigsaw_80ep | 8106 | `9d42f058147e5bf9b6a122c185937859` | 0.2936 | recovered excursion ep 30; EMA washout bump peaked VAL@45 (0.693), non-truncation logged |
+| sh_proximal_80ep | 8107 | `afceb3cecfbcce7f65ede2721edbeb84` | 0.1841 | none |
+| meander_oxbow_80ep | 8108 | `c43e9a8171ed1e7cb6aad5554bf26348` | 0.1836 | none |

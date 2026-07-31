@@ -1,0 +1,48 @@
+=== [1/4] validation losses (channel:MEANDER_OXBOW) ===
+env=channel:MEANDER_OXBOW  val subset=5000  K=4  seed=20260901
+epoch   5: val loss 1.439281  (n=5000)
+epoch  10: val loss 1.161497  (n=5000)
+epoch  15: val loss 0.890518  (n=5000)
+epoch  20: val loss 0.673340  (n=5000)
+epoch  25: val loss 0.529271  (n=5000)
+epoch  30: val loss 0.436061  (n=5000)
+epoch  35: val loss 0.374430  (n=5000)
+epoch  40: val loss 0.332207  (n=5000)
+epoch  45: val loss 0.300220  (n=5000)
+epoch  50: val loss 0.274329  (n=5000)
+epoch  55: val loss 0.252454  (n=5000)
+epoch  60: val loss 0.233902  (n=5000)
+epoch  65: val loss 0.218103  (n=5000)
+epoch  70: val loss 0.204664  (n=5000)
+epoch  75: val loss 0.193290  (n=5000)
+epoch  80: val loss 0.183611  (n=5000)
+
+Best: epoch 80 (0.183611)   last: epoch 80 (0.183611)
+ANTI-UNDERTRAINING: FIRES (best == final epoch)
+Saved: /scratch/08405/ilgar/specialist_runs/meander_oxbow_80ep/checkpoints/val_losses.json
+BEST_EPOCH=80 ANTI_UNDERTRAINING_FIRES=YES CKPT=/scratch/08405/ilgar/specialist_runs/meander_oxbow_80ep/checkpoints/inference_epoch080.pt
+=== [2/4] generation (512 volumes, Table 6, seed offset +500000) ===
+self-test OK: replica sampler is bit-identical to FlowMatching.sample
+channel:MEANDER_OXBOW k=0 rows 0-255: 57s elapsed
+channel:MEANDER_OXBOW k=0 rows 256-511: 114s elapsed
+channel:MEANDER_OXBOW: saved (512, 64, 64, 32) ntg_mean=0.4130
+done: 512 volumes in 115.9s -> /work/08405/ilgar/vista/resbench_eval/specialist_meander_oxbow_80ep/generation_manifest_a.json
+=== [3/4] ResBench scoring ===
+| environment | |dNTG| | variogram MAE/sill | connectivity MAE | geobody W1 (log10) | |d largest frac| | well mismatch % |
+|---|---|---|---|---|---|---|
+| channel:MEANDER_OXBOW | 0.0081 (outside; band 0.0031) | 0.0309 (outside; band 0.0135) | 0.0062 (outside; band 0.0003) | 0.0367 (outside; band 0.0015) | 0.0022 (outside; band 0.0008) | n/a |
+| pooled | 0.0081 (outside; band 0.0031) | 0.0309 (outside; band 0.0135) | 0.0062 (outside; band 0.0003) | 0.0367 (outside; band 0.0015) | 0.0022 (outside; band 0.0008) | n/a |
+=== [4/4] compartmentalization posthoc ===
+## Geobody W1 vs minimum body size (post-hoc)
+
+| environment | W1 min≥1 (band) | W1 min≥2 (band) | W1 min≥8 (band) |
+|---|---|---|---|
+| channel:MEANDER_OXBOW | 0.0367 (outside; 0.0015) | 0.1069 (outside; 0.0067) | 1.1348 (outside; 0.1290) |
+| pooled | 0.0367 (n/a; —) | 0.1069 (n/a; —) | 1.1348 (n/a; —) |
+
+## Per-volume compartmentalization: reference vs ResFlow (post-hoc)
+
+| environment | % vols τ_z<0.99 ref | gen | % vols spanning z ref | gen | largest-frac median [IQR] ref | gen |
+|---|---|---|---|---|---|---|
+| channel:MEANDER_OXBOW | 2.7% [1.6, 4.5] | 13.5% [10.8, 16.7] | 98.8% [97.5, 99.5] | 100.0% [99.3, 100.0] | 0.998 [0.996, 0.999] | 0.993 [0.990, 0.995] |
+PIPELINE_DONE tag=meander_oxbow_80ep best_epoch=80 fires=YES

@@ -1,0 +1,48 @@
+=== [1/4] validation losses (channel:CB_LABYRINTH) ===
+env=channel:CB_LABYRINTH  val subset=5000  K=4  seed=20260901
+epoch   5: val loss 1.331546  (n=5000)
+epoch  10: val loss 1.137531  (n=5000)
+epoch  15: val loss 0.910584  (n=5000)
+epoch  20: val loss 0.694043  (n=5000)
+epoch  25: val loss 0.536298  (n=5000)
+epoch  30: val loss 0.425568  (n=5000)
+epoch  35: val loss 0.354419  (n=5000)
+epoch  40: val loss 0.310051  (n=5000)
+epoch  45: val loss 0.279890  (n=5000)
+epoch  50: val loss 0.256824  (n=5000)
+epoch  55: val loss 0.238281  (n=5000)
+epoch  60: val loss 0.223260  (n=5000)
+epoch  65: val loss 0.210860  (n=5000)
+epoch  70: val loss 0.200434  (n=5000)
+epoch  75: val loss 0.191620  (n=5000)
+epoch  80: val loss 0.184172  (n=5000)
+
+Best: epoch 80 (0.184172)   last: epoch 80 (0.184172)
+ANTI-UNDERTRAINING: FIRES (best == final epoch)
+Saved: /scratch/08405/ilgar/specialist_runs/cb_labyrinth_80ep/checkpoints/val_losses.json
+BEST_EPOCH=80 ANTI_UNDERTRAINING_FIRES=YES CKPT=/scratch/08405/ilgar/specialist_runs/cb_labyrinth_80ep/checkpoints/inference_epoch080.pt
+=== [2/4] generation (512 volumes, Table 6, seed offset +500000) ===
+self-test OK: replica sampler is bit-identical to FlowMatching.sample
+channel:CB_LABYRINTH k=0 rows 0-255: 57s elapsed
+channel:CB_LABYRINTH k=0 rows 256-511: 114s elapsed
+channel:CB_LABYRINTH: saved (512, 64, 64, 32) ntg_mean=0.3834
+done: 512 volumes in 116.0s -> /work/08405/ilgar/vista/resbench_eval/specialist_cb_labyrinth_80ep/generation_manifest_a.json
+=== [3/4] ResBench scoring ===
+| environment | |dNTG| | variogram MAE/sill | connectivity MAE | geobody W1 (log10) | |d largest frac| | well mismatch % |
+|---|---|---|---|---|---|---|
+| channel:CB_LABYRINTH | 0.0141 (inside; band 0.0179) | 0.0521 (outside; band 0.0094) | 0.0038 (outside; band 0.0012) | 0.0360 (outside; band 0.0082) | 0.0328 (outside; band 0.0014) | n/a |
+| pooled | 0.0141 (inside; band 0.0179) | 0.0521 (outside; band 0.0094) | 0.0038 (outside; band 0.0012) | 0.0360 (outside; band 0.0082) | 0.0328 (outside; band 0.0014) | n/a |
+=== [4/4] compartmentalization posthoc ===
+## Geobody W1 vs minimum body size (post-hoc)
+
+| environment | W1 min≥1 (band) | W1 min≥2 (band) | W1 min≥8 (band) |
+|---|---|---|---|
+| channel:CB_LABYRINTH | 0.0360 (outside; 0.0082) | 0.0718 (outside; 0.0103) | 0.5876 (outside; 0.0804) |
+| pooled | 0.0360 (n/a; —) | 0.0718 (n/a; —) | 0.5876 (n/a; —) |
+
+## Per-volume compartmentalization: reference vs ResFlow (post-hoc)
+
+| environment | % vols τ_z<0.99 ref | gen | % vols spanning z ref | gen | largest-frac median [IQR] ref | gen |
+|---|---|---|---|---|---|---|
+| channel:CB_LABYRINTH | 18.4% [15.2, 21.9] | 4.3% [2.9, 6.4] | 90.8% [88.0, 93.0] | 99.6% [98.6, 99.9] | 0.998 [0.993, 0.999] | 0.998 [0.996, 0.999] |
+PIPELINE_DONE tag=cb_labyrinth_80ep best_epoch=80 fires=YES

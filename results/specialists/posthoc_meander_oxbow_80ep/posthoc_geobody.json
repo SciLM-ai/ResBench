@@ -1,0 +1,65 @@
+{
+  "w1_sensitivity": [
+    {
+      "environment": "channel:MEANDER_OXBOW",
+      "w1_min1": 0.036723334924295664,
+      "band_min1": 0.0015246990976461672,
+      "verdict_min1": "outside",
+      "w1_min2": 0.1068741798119539,
+      "band_min2": 0.006658471350443822,
+      "verdict_min2": "outside",
+      "w1_min8": 1.1347932986054532,
+      "band_min8": 0.1290347276076359,
+      "verdict_min8": "outside"
+    },
+    {
+      "environment": "pooled",
+      "w1_min1": 0.036723334924295664,
+      "band_min1": NaN,
+      "verdict_min1": "n/a",
+      "w1_min2": 0.1068741798119539,
+      "band_min2": NaN,
+      "verdict_min2": "n/a",
+      "w1_min8": 1.1347932986054532,
+      "band_min8": NaN,
+      "verdict_min8": "n/a"
+    }
+  ],
+  "compartmentalization": [
+    {
+      "environment": "channel:MEANDER_OXBOW",
+      "ref_n": 512,
+      "ref_frac_tauz_lt_099": 0.02734375,
+      "ref_tauz_ci": [
+        0.0164,
+        0.0454
+      ],
+      "ref_frac_span": 0.98828125,
+      "ref_span_ci": [
+        0.9747,
+        0.9946
+      ],
+      "ref_largest_median": 0.9977076905926315,
+      "ref_largest_iqr": [
+        0.9962335497522747,
+        0.9986823082158451
+      ],
+      "gen_n": 512,
+      "gen_frac_tauz_lt_099": 0.134765625,
+      "gen_tauz_ci": [
+        0.1079,
+        0.1671
+      ],
+      "gen_frac_span": 1.0,
+      "gen_span_ci": [
+        0.9926,
+        1.0
+      ],
+      "gen_largest_median": 0.9927966969798334,
+      "gen_largest_iqr": [
+        0.9895450207063934,
+        0.9945500310834146
+      ]
+    }
+  ]
+}
