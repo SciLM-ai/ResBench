@@ -35,7 +35,7 @@
       0.9977234229659361
     ]
   },
-  "channel:PV_SHOESTRING|specialist (40 ep)": {
+  "channel:PV_SHOESTRING|specialist": {
     "gen_n": 512,
     "gen_frac_tauz_lt_099": 1.0,
     "gen_tauz_ci": [
@@ -107,7 +107,7 @@
       0.8301954850836049
     ]
   },
-  "lobe|specialist (40 ep)": {
+  "lobe|specialist": {
     "gen_n": 512,
     "gen_frac_tauz_lt_099": 0.947265625,
     "gen_tauz_ci": [
@@ -141,6 +141,114 @@
     "gen_largest_iqr": [
       0.17920572642057525,
       0.5688154422735787
+    ]
+  },
+  "delta|reference": {
+    "ref_n": 512,
+    "ref_frac_tauz_lt_099": 0.203125,
+    "ref_tauz_ci": [
+      0.1705,
+      0.2401
+    ],
+    "ref_frac_span": 0.80859375,
+    "ref_span_ci": [
+      0.7723,
+      0.8403
+    ],
+    "ref_largest_median": 0.9988288909129664,
+    "ref_largest_iqr": [
+      0.9939146386253184,
+      0.999693156772782
+    ]
+  },
+  "delta|foundation": {
+    "gen_n": 512,
+    "gen_frac_tauz_lt_099": 0.220703125,
+    "gen_tauz_ci": [
+      0.1869,
+      0.2586
+    ],
+    "gen_frac_span": 0.79296875,
+    "gen_span_ci": [
+      0.7558,
+      0.8258
+    ],
+    "gen_largest_median": 0.9983690043772109,
+    "gen_largest_iqr": [
+      0.9905781215049094,
+      0.9996830782615058
+    ]
+  },
+  "delta|specialist": {
+    "gen_n": 512,
+    "gen_frac_tauz_lt_099": 0.08984375,
+    "gen_tauz_ci": [
+      0.068,
+      0.1178
+    ],
+    "gen_frac_span": 0.953125,
+    "gen_span_ci": [
+      0.9312,
+      0.9683
+    ],
+    "gen_largest_median": 0.9984165376259613,
+    "gen_largest_iqr": [
+      0.9961005151299238,
+      0.9992928158789623
+    ]
+  },
+  "channel:SH_DISTAL|reference": {
+    "ref_n": 512,
+    "ref_frac_tauz_lt_099": 0.0,
+    "ref_tauz_ci": [
+      0.0,
+      0.0074
+    ],
+    "ref_frac_span": 1.0,
+    "ref_span_ci": [
+      0.9926,
+      1.0
+    ],
+    "ref_largest_median": 1.0,
+    "ref_largest_iqr": [
+      0.9999221518354662,
+      1.0
+    ]
+  },
+  "channel:SH_DISTAL|foundation": {
+    "gen_n": 512,
+    "gen_frac_tauz_lt_099": 0.0,
+    "gen_tauz_ci": [
+      0.0,
+      0.0074
+    ],
+    "gen_frac_span": 1.0,
+    "gen_span_ci": [
+      0.9926,
+      1.0
+    ],
+    "gen_largest_median": 0.9999226439438278,
+    "gen_largest_iqr": [
+      0.9997275428514896,
+      0.999976445072966
+    ]
+  },
+  "channel:SH_DISTAL|specialist": {
+    "gen_n": 512,
+    "gen_frac_tauz_lt_099": 0.0,
+    "gen_tauz_ci": [
+      0.0,
+      0.0074
+    ],
+    "gen_frac_span": 1.0,
+    "gen_span_ci": [
+      0.9926,
+      1.0
+    ],
+    "gen_largest_median": 0.9999242672691847,
+    "gen_largest_iqr": [
+      0.9997963205019763,
+      0.9999747406543854
     ]
   }
 }

@@ -232,3 +232,86 @@ EMA undertraining in both environments.
   this batch size.
 - Wave 2 (delta, channel:SH_DISTAL) not started; listed as planned in
   E.1.
+
+---
+
+# Wave 2 results (delta, channel:SH_DISTAL) — 2026-07-31
+
+Executed per Amendment E-3 with one operator deviation logged pre-training
+(E-3 update): wave-2 specialists trained at the 80-epoch budget directly
+(warmup 4, cosine T_max 76, seeds delta 8103 / SH_DISTAL 8104, two 4× GH200
+DDP groups, global batch 384 = 4×96); the matched-exposure 40-epoch stage
+was not run for these environments (aborted pre-checkpoint, preserved at
+`*_aborted40`). Their comparison rows are labeled "specialist (80 ep,
+direct)" and the matched-exposure rows can be added later if needed.
+
+## Wave-2 comparison rows (frozen band; foundation verbatim; full 4-env table in `comparison.md`)
+
+| environment | source | \|dNTG\| | variogram MAE/sill | connectivity MAE | geobody W1 (log10) | \|d largest frac\| |
+|---|---|---|---|---|---|---|
+| delta | split-half band | 0.0117 | 0.0054 | 0.0027 | 0.0234 | 0.0182 |
+| delta | foundation | 0.0078 (inside) | 0.0150 (outside) | 0.0009 (inside) | 0.0308 (near) | 0.0085 (inside) |
+| delta | specialist (80 ep, direct) | 0.0150 (near) | 0.0354 (outside) | 0.0148 (outside) | 0.0712 (outside) | 0.0709 (outside) |
+| channel:SH_DISTAL | split-half band | 0.0189 | 0.0122 | 0.0000 | 0.1344 | 0.0001 |
+| channel:SH_DISTAL | foundation | 0.0104 (inside) | 0.0364 (outside) | 0.0001 (outside†) | 0.9709 (outside) | 0.0000 (inside) |
+| channel:SH_DISTAL | specialist (80 ep, direct) | 0.0182 (inside) | 0.0314 (outside) | 0.0001 (near†) | 0.8747 (outside) | 0.0001 (near†) |
+
+† Saturated bands (see the master-table footnote): the SH_DISTAL
+connectivity and largest-frac bands are ≤ 1e-4 because the sand phase
+percolates; both models' absolute values are 0.0001 or smaller and the
+tier difference at the fourth decimal is not meaningful.
+
+## Parity outcomes (pre-registered criterion, all four environments)
+
+- channel:PV_SHOESTRING: **SUBSTANTIATED** (vs both specialist variants).
+- lobe: **NOT substantiated** (connectivity column, both variants).
+- delta: **SUBSTANTIATED** — foundation tier ≥ specialist in every
+  column (better in four of five; absolute values 1.9–8.3× smaller in
+  dNTG, connectivity, geobody W1, largest frac).
+- channel:SH_DISTAL: **NOT substantiated**, driven solely by the
+  saturated connectivity tier (both models at 0.0001 absolute; band
+  0.0000). Excluding saturated-band columns per the master-table
+  convention, foundation tier ≥ specialist everywhere; descriptively
+  the specialist is slightly better on variogram (0.0314 vs 0.0364)
+  and geobody W1 (0.8747 vs 0.9709), the foundation on dNTG (0.0104 vs
+  0.0182).
+
+## Wave-2 findings
+
+- **The SH_DISTAL geobody failure is not a weight-sharing cost.** The
+  dedicated specialist at twice the foundation's per-environment
+  exposure reproduces the foundation's dominant master-table failure
+  (geobody W1 0.8747 vs 0.9709; both ~6.5–7.2× the band). Whatever
+  causes the geobody-size mismatch in this environment, single-
+  environment training does not repair it.
+- **Delta extends the over-connection attribution.** The converged
+  delta specialist over-connects more than the foundation
+  (floor-to-surface span 0.953 [0.931, 0.968] vs foundation 0.793 and
+  reference 0.809; compartmentalized fraction 0.090 vs reference
+  0.203), matching the converged-PV pattern: in channel/delta
+  environments the over-connection bias follows the architecture, not
+  the weight sharing.
+- Validation at the terminal budget: delta 1.229 → 0.1744 (ep 80),
+  SH_DISTAL 1.397 → 0.1881 (ep 80); best = final for both (the E.3
+  flag fires; 80 is the registered terminal budget, disclosed as for
+  wave 1). Delta's is the lowest specialist validation loss of all
+  four environments, consistent with its largest data share (28,080
+  steps ≈ 2.8 EMA time constants).
+
+## Wave-2 run manifests and anomalies
+
+- delta_80ep: seed 8103, selected `inference_epoch080.pt` md5
+  `e56dbb7f2e3f5a0b1fc336303ac0137c`; one transient recovered loss
+  excursion each at epochs 13 and 30 (peak-LR plateau; EMA/val curve
+  recovered within two checkpoints).
+- sh_distal_80ep: seed 8104, selected `inference_epoch080.pt` md5
+  `681c3267859d1ad74ab09a14725e3069`; one transient recovered
+  excursion at epoch 11. Its first pipeline invocation failed on a
+  manifest filename mismatch (operational only, before generation; no
+  scoring artifact was produced); fixed and rerun.
+- Scoring emitted variogram z-axis plateau-vs-sill sanity warnings for
+  delta for both the reference and generated summaries — an intrinsic
+  zonal-anisotropy property of the environment, not a model artifact.
+- Wave-2 generation manifests use the E.4 noise offset (+500000);
+  self-test passed (bit-identity) in both pipelines; specialist mean
+  NTG: delta 0.5934 vs reference (see report), SH_DISTAL 0.5995.

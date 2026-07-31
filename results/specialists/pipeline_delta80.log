@@ -1,0 +1,52 @@
+=== [1/4] validation losses (delta) ===
+env=delta  val subset=7500  K=4  seed=20260901
+epoch   5: val loss 1.230793  (n=7500)
+epoch  10: val loss 0.862044  (n=7500)
+epoch  15: val loss 0.563613  (n=7500)
+epoch  20: val loss 0.462812  (n=7500)
+epoch  25: val loss 0.413584  (n=7500)
+epoch  30: val loss 0.385115  (n=7500)
+epoch  35: val loss 0.447939  (n=7500)
+epoch  40: val loss 0.436551  (n=7500)
+epoch  45: val loss 0.401130  (n=7500)
+epoch  50: val loss 0.361957  (n=7500)
+epoch  55: val loss 0.323406  (n=7500)
+epoch  60: val loss 0.285226  (n=7500)
+epoch  65: val loss 0.251322  (n=7500)
+epoch  70: val loss 0.221974  (n=7500)
+epoch  75: val loss 0.196347  (n=7500)
+epoch  80: val loss 0.174440  (n=7500)
+
+Best: epoch 80 (0.174440)   last: epoch 80 (0.174440)
+ANTI-UNDERTRAINING: FIRES (best == final epoch)
+Saved: /scratch/08405/ilgar/specialist_runs/delta_80ep/checkpoints/val_losses.json
+BEST_EPOCH=80 ANTI_UNDERTRAINING_FIRES=YES CKPT=/scratch/08405/ilgar/specialist_runs/delta_80ep/checkpoints/inference_epoch080.pt
+=== [2/4] generation (512 volumes, Table 6, seed offset +500000) ===
+self-test OK: replica sampler is bit-identical to FlowMatching.sample
+delta k=0 rows 0-255: 58s elapsed
+delta k=0 rows 256-511: 115s elapsed
+delta: saved (512, 64, 64, 32) ntg_mean=0.3642
+done: 512 volumes in 115.9s -> /work/08405/ilgar/vista/resbench_eval/specialist_delta_80ep/generation_manifest_a.json
+=== [3/4] ResBench scoring ===
+SANITY [delta]: axis 2: variogram plateau 0.0930 far from sill 0.2354
+SANITY [delta]: axis 2: variogram plateau 0.1175 far from sill 0.2354
+SANITY [pooled]: axis 2: variogram plateau 0.0930 far from sill 0.2354
+SANITY [pooled]: axis 2: variogram plateau 0.1175 far from sill 0.2354
+| environment | |dNTG| | variogram MAE/sill | connectivity MAE | geobody W1 (log10) | |d largest frac| | well mismatch % |
+|---|---|---|---|---|---|---|
+| delta | 0.0150 (outside; band 0.0017) | 0.0354 (outside; band 0.0075) | 0.0148 (outside; band 0.0030) | 0.0712 (outside; band 0.0152) | 0.0709 (outside; band 0.0142) | n/a |
+| pooled | 0.0150 (outside; band 0.0017) | 0.0354 (outside; band 0.0075) | 0.0148 (outside; band 0.0030) | 0.0712 (outside; band 0.0152) | 0.0709 (outside; band 0.0142) | n/a |
+=== [4/4] compartmentalization posthoc ===
+## Geobody W1 vs minimum body size (post-hoc)
+
+| environment | W1 min≥1 (band) | W1 min≥2 (band) | W1 min≥8 (band) |
+|---|---|---|---|
+| delta | 0.0712 (outside; 0.0152) | 0.3262 (outside; 0.1074) | 0.8326 (outside; 0.1161) |
+| pooled | 0.0712 (n/a; —) | 0.3262 (n/a; —) | 0.8326 (n/a; —) |
+
+## Per-volume compartmentalization: reference vs ResFlow (post-hoc)
+
+| environment | % vols τ_z<0.99 ref | gen | % vols spanning z ref | gen | largest-frac median [IQR] ref | gen |
+|---|---|---|---|---|---|---|
+| delta | 20.3% [17.1, 24.0] | 9.0% [6.8, 11.8] | 80.9% [77.2, 84.0] | 95.3% [93.1, 96.8] | 0.999 [0.994, 1.000] | 0.998 [0.996, 0.999] |
+PIPELINE_DONE tag=delta_80ep best_epoch=80 fires=YES

@@ -1,0 +1,65 @@
+{
+  "w1_sensitivity": [
+    {
+      "environment": "channel:SH_DISTAL",
+      "w1_min1": 0.8747027219281618,
+      "band_min1": 0.19165478528124352,
+      "verdict_min1": "outside",
+      "w1_min2": 0.571319556639986,
+      "band_min2": 0.06553807652615644,
+      "verdict_min2": "outside",
+      "w1_min8": 0.39357753252695404,
+      "band_min8": 0.08714134872083153,
+      "verdict_min8": "outside"
+    },
+    {
+      "environment": "pooled",
+      "w1_min1": 0.8747027219281618,
+      "band_min1": NaN,
+      "verdict_min1": "n/a",
+      "w1_min2": 0.571319556639986,
+      "band_min2": NaN,
+      "verdict_min2": "n/a",
+      "w1_min8": 0.39357753252695404,
+      "band_min8": NaN,
+      "verdict_min8": "n/a"
+    }
+  ],
+  "compartmentalization": [
+    {
+      "environment": "channel:SH_DISTAL",
+      "ref_n": 512,
+      "ref_frac_tauz_lt_099": 0.0,
+      "ref_tauz_ci": [
+        0.0,
+        0.0074
+      ],
+      "ref_frac_span": 1.0,
+      "ref_span_ci": [
+        0.9926,
+        1.0
+      ],
+      "ref_largest_median": 1.0,
+      "ref_largest_iqr": [
+        0.9999221518354662,
+        1.0
+      ],
+      "gen_n": 512,
+      "gen_frac_tauz_lt_099": 0.0,
+      "gen_tauz_ci": [
+        0.0,
+        0.0074
+      ],
+      "gen_frac_span": 1.0,
+      "gen_span_ci": [
+        0.9926,
+        1.0
+      ],
+      "gen_largest_median": 0.9999242672691847,
+      "gen_largest_iqr": [
+        0.9997963205019763,
+        0.9999747406543854
+      ]
+    }
+  ]
+}

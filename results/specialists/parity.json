@@ -58,5 +58,65 @@
         "foundation_at_least_as_good": true
       }
     }
+  },
+  "delta": {
+    "substantiated": true,
+    "columns": {
+      "abs_dntg": {
+        "foundation": "inside",
+        "specialist": "near",
+        "foundation_at_least_as_good": true
+      },
+      "variogram_mae": {
+        "foundation": "outside",
+        "specialist": "outside",
+        "foundation_at_least_as_good": true
+      },
+      "connectivity_mae": {
+        "foundation": "inside",
+        "specialist": "outside",
+        "foundation_at_least_as_good": true
+      },
+      "geobody_w1": {
+        "foundation": "near",
+        "specialist": "outside",
+        "foundation_at_least_as_good": true
+      },
+      "abs_dlargest_frac": {
+        "foundation": "inside",
+        "specialist": "outside",
+        "foundation_at_least_as_good": true
+      }
+    }
+  },
+  "channel:SH_DISTAL": {
+    "substantiated": false,
+    "columns": {
+      "abs_dntg": {
+        "foundation": "inside",
+        "specialist": "inside",
+        "foundation_at_least_as_good": true
+      },
+      "variogram_mae": {
+        "foundation": "outside",
+        "specialist": "outside",
+        "foundation_at_least_as_good": true
+      },
+      "connectivity_mae": {
+        "foundation": "outside",
+        "specialist": "near",
+        "foundation_at_least_as_good": false
+      },
+      "geobody_w1": {
+        "foundation": "outside",
+        "specialist": "outside",
+        "foundation_at_least_as_good": true
+      },
+      "abs_dlargest_frac": {
+        "foundation": "inside",
+        "specialist": "near",
+        "foundation_at_least_as_good": true
+      }
+    }
   }
 }
