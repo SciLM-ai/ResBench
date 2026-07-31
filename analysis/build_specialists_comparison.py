@@ -43,6 +43,8 @@ ENVS = [
     ('channel:SH_DISTAL', 'sh_distal_80ep', 'specialist (80 ep, direct)'),
     ('channel:CB_LABYRINTH', 'cb_labyrinth_80ep', 'specialist (80 ep, direct)'),
     ('channel:CB_JIGSAW', 'cb_jigsaw_80ep', 'specialist (80 ep, direct)'),
+    ('channel:SH_PROXIMAL', 'sh_proximal_80ep', 'specialist (80 ep, direct)'),
+    ('channel:MEANDER_OXBOW', 'meander_oxbow_80ep', 'specialist (80 ep, direct)'),
 ]
 
 CELL_LABELS = {
