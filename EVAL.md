@@ -756,3 +756,12 @@ groups (global batch unchanged at 384 = 4×96), nodes
 c636-[092,101,102,111] (delta) and c636-112 + c637-[052,061,062]
 (SH_DISTAL), job 876236. Generation manifests use the E.4 noise offset
 (+500000) verbatim. Recorded before any wave-2 training step.
+
+(Update 2026-07-30 20:35, pre-scoring: by operator decision the wave-2
+environments train at the 80-epoch budget directly (same recipe as the
+wave-1 extensions: warmup 4, cosine T_max 76, seeds per E-3); the
+40-epoch matched-exposure attempts were aborted at ~10 minutes, before
+any checkpoint, and preserved at `*_aborted40`. Selection per E.3 is
+the validation argmin over each environment's completed runs.
+Matched-exposure 40-epoch runs for these environments may be added
+later; their absence from any interim wave-2 table will be marked.)
