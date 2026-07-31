@@ -463,6 +463,82 @@ bodies. Together the two tiers show environment-dependent failure modes:
 channels get stride-locked positions and a sand excess; lobes keep
 proportions and positions but over-merge at the body scale.
 
+## Acceptance-criteria extensions (Boisvert 2010; Merzoug et al. 2025) — EVAL.md Addendum F
+
+CPU-only post-hoc on existing volumes (plus F.4's 512 training-row
+generations, 2.2 min GPU). Full tables: `results/posthoc/acceptance_ext.md`,
+`reliability.md`, `memorization.md`; figures `mps_top20`, `reliability`,
+`memorization_mds` (PDF+PNG).
+
+**F.1 Multiple-point (2×2×2) histograms.** JSD between pooled 256-bin
+pattern histograms is minuscule everywhere (1.1–4.1 × 10⁻⁴ bits): 4
+environments inside their split-half band, 2 near, 2 outside (PV
+shoestring 0.00041 vs 0.00015; SH distal 0.00025 vs 0.00008) — the local
+pattern grammar is essentially reproduced; the outside verdicts reflect
+band tightness, not visible pattern errors (figure `mps_top20`).
+
+**F.2 Runs statistics.** The "longer vertical runs" expectation from the
+γ_z plateau undershoot is **refuted**: generated vertical (z) runs are
+equal or slightly *shorter* (median 5→4 in SH distal and delta; p90
+11→10 in SH proximal), with W1 outside band in jigsaw/SH distal/SH
+proximal/delta. Reconciliation: γ_z measures two-point correlation while
+runs measure exact contiguity — the model's excess of small artifacts
+(F.5) interrupts long runs even though two-point vertical structure is
+smoother. The x-axis control shows the same small-magnitude shifts, so
+this is not a z-specific elongation effect.
+
+**F.3 Reliability / expected calibration error.** Voxelwise decile
+reliability against engine-conditional frequencies (well-conditional,
+Addendum C assets) and engine unconditional frequencies (Addendum B):
+ECE 2.2–11.7%, worst in the sheet environments (SH distal 0.117
+well-conditional / 0.092 unconditional), mildest in lobe (0.036 / 0.022,
+the only near verdict); all other cells outside their engine self-ECE
+bands. This is the probability-space image of the entropy
+under-dispersion (Addenda B–C).
+
+**F.4 Memorization / novelty.** **No memorization**: maximum
+gen-vs-training voxel agreement is 0.92 (delta), far from the bitwise
+ceiling of 1.0 (the engine regeneration at exact (params, seed) is
+bit-identical to the stored volume, validated). Median agreement sits
+0.03–0.07 *above* the engine same-parameter pair level in 7 of 8
+environments — consistent with under-dispersion (samples concentrated
+near the conditional mode), not instance recall; the per-environment
+flag counts carry the caveat that the engine-pair null uses a single
+parameter vector per environment. The MDS embedding
+(`memorization_mds`) shows generated volumes interleaved with training
+and reference throughout — no generated cluster, no collapse onto
+training points.
+
+**F.5 Artifact rate** (6-connected bodies < 8 voxels). Reference vs
+ensemble (a): direction is environment-dependent — up in SH distal
+(1.3 → 3.7/vol, the known speck anomaly), PV shoestring (50.6 → 56.4)
+and delta (39.4 → 43.8); *down* in labyrinth (77.7 → 67.4) and
+meander-oxbow (90.5 → 85.1); flat in lobe/jigsaw/SH proximal.
+**Merzoug's conditioning-density failure mode is not observed**: from
+ensemble (b), mean artifacts/volume *decreases* with well count
+(67.8 → 60.8 → 59.2 for 1/2/3 wells) and the fraction of volumes with
+any artifact is flat (0.974 → 0.981 → 0.981, overlapping Wilson CIs).
+
+## Criteria coverage map (F.6)
+
+| criterion (source) | implemented |
+|---|---|
+| Global distribution / proportions (Leuangthong 2004) | Master table \|ΔNTG\| + NTG parity figure |
+| Variogram reproduction (Leuangthong 2004) | Master table variogram MAE + overlays figure |
+| Local uncertainty / accuracy plot (Leuangthong 2004) | F.3 reliability diagrams + ECE (`reliability`) |
+| Honoring conditioning data (Leuangthong 2004) | Master table well mismatch % (exactitude by construction) |
+| Multiple-point histograms (Boisvert 2010) | F.1 MPS JSD (`mps_top20`) |
+| Runs / coordinate connectivity (Boisvert 2010) | F.2 run-length statistics |
+| Connectivity function τ(h) (Boisvert 2010) | Master table connectivity MAE + overlays |
+| Geobody / object statistics (Boisvert 2010) | Master table geobody W1 + largest fraction + CDFs |
+| Distribution recovery under conditioning (Merzoug 2025) | Master table (ensemble a) + Addendum C well-conditional |
+| Uncertainty calibration (Merzoug 2025) | Addenda A–C entropy calibration + F.3 ECE |
+| Artifact rate vs conditioning density (Merzoug 2025) | F.5 (failure mode not observed) |
+| Memorization / novelty (Merzoug 2025) | F.4 agreement + MDS |
+| Large-domain / assembly consistency (Merzoug 2025) | Addendum E (MultiDiffusion assembly benchmark) |
+| Property (poro/perm) statistics (Leuangthong 2004) | Out of scope (EVAL.md §7: stochastic engine annotations) |
+| Flow-response / dynamic checks (Merzoug 2025) | Deferred (dynamic) |
+
 ## Anomalies to look at before writing the rebuttal
 
 - **Systematic conditional under-dispersion (entropy calibration)** — the
