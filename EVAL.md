@@ -743,3 +743,16 @@ launched on 2× GH200 (the topology that trained the lobe 40-epoch run
 without incident), all other settings per E-2/E.3 unchanged, same
 observational watcher and truncation clause. Recorded before any retry
 checkpoint was evaluated.)
+
+## Amendment E-3 — Wave 2 execution (2026-07-30, before wave-2 training)
+
+Wave 2 (E.1: `delta`, `channel:SH_DISTAL`) executes under the identical
+E.2/E.3 recipe and rules: matched-exposure 40 epochs first, validation
+argmin selection, the fired-branch 80-epoch from-scratch extension with
+the E-2 delegated truncation clause, and the single seed-retry
+convention on divergence. Torch init seeds: delta 8103, SH_DISTAL 8104
+(loader seed 42 unchanged). Platform: two concurrent 4× GH200 DDP
+groups (global batch unchanged at 384 = 4×96), nodes
+c636-[092,101,102,111] (delta) and c636-112 + c637-[052,061,062]
+(SH_DISTAL), job 876236. Generation manifests use the E.4 noise offset
+(+500000) verbatim. Recorded before any wave-2 training step.
