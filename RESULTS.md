@@ -721,3 +721,86 @@ should not -- and it does not.
 geobody W1 0.0735, extent W1 0.0302**, against the foundation model's
 0.2121 / 0.0785 under the deployed MultiDiffusion tiling: **2.9x and 2.6x
 better**. Still 3.9x and 3.0x band, so the gap is reduced, not closed.
+
+### Addendum G round 3 — block schedulers and trajectory conditioning (scored)
+
+Two further 80-epoch models at matched exposure, both crops192 + masked
+loss + bf16, differing only in what the context channels carry:
+
+- `g2_ext6` (seed 8302, 3 channels): mask distribution extended from
+  three neighbour configurations (left, top, left+top) to all six
+  (+ left+right, top+bottom, all_four), which a 4-colour schedule needs.
+  Wells fall from 35% to 20% of samples as a result.
+- `g2_traj` (seed 8301, 4 channels): same masks plus a context noise
+  level s, with 50% of samples drawn at s ~ U(0,1) instead of clean
+  context. This is Diffusion-Forcing-style training (Chen et al., NeurIPS
+  2024) with spatial blocks in place of sequence positions, and it is
+  what a fully parallel coupled sampler requires.
+
+Validation argmin selected epoch 80 for both (`g2_ext6` 0.16704,
+`g2_traj` 0.17559). Four schedulers were then run on **identical
+weights**, so the scheduler is the only variable.
+
+| ensemble | \|dNTG\| | vario | conn | geobody W1 | extent W1 |
+|---|---|---|---|---|---|
+| band | 0.0001 | 0.0041 | 0.0040 | 0.0190 | 0.0100 |
+| **g2_ext6** native | 0.0247 | 0.0253 | 0.0378 | 0.1138 | 0.0607 |
+| g2_ext6 multi | 0.0265 | 0.0195 | 0.0296 | 0.0999 | 0.0455 |
+| g2_ext6 **raster** | 0.0177 | 0.0221 | 0.0287 | **0.0914** | 0.0454 |
+| g2_ext6 stage4 | 0.0331 | 0.0121 | 0.0178 | 0.1501 | 0.0575 |
+| g2_ext6 hybrid (md_frac 0.3) | 0.0377 | 0.0105 | **0.0087** | 0.1619 | 0.0745 |
+| g2_traj raster | 0.0046 | 0.0073 | 0.0311 | 0.2173 | 0.0891 |
+| g2_traj stage4 | 0.0016 | 0.0072 | 0.0181 | 0.2823 | 0.1164 |
+| g2_traj **coupled** | 0.0235 | 0.0160 | 0.0453 | **0.7944** | 0.3626 |
+| **round-1 crops192 raster ov24** | 0.0004 | 0.0130 | 0.0184 | 0.0811 | 0.0320 |
+| **round-1 crops192 raster ov16** | 0.0017 | 0.0136 | 0.0161 | **0.0735** | **0.0302** |
+
+**Finding 9 — 4-colour staging trades quality for depth.** Blocks are
+coloured by (row, col) parity; same-colour blocks sit 2 strides apart and
+are therefore disjoint whenever overlap <= block/2, so four stages
+suffice (four is also the minimum: k*stride >= block needs k = 2 per
+axis). Sequential depth becomes O(1) in grid size -- 4 stages x 50 steps
+regardless of grid, against the raster wavefront's (2n-1) x 50, i.e. 200
+vs 950 at 10x10 and 200 vs 3950 at 40x40. But on identical weights
+geobody W1 is 0.1501 against raster's 0.0914, **64% worse**. The cause is
+structural and was predicted before the run: stage 1 factorises
+p(class 1) as a product of independent blocks, whereas raster order is
+exact ancestral sampling. Class-1 blocks sit 16 cells apart at overlap 24
+while lobe `width_cells` has median 46, so bodies routinely cross the gap
+and the independence assumption is violated.
+
+**Finding 10 — the MultiDiffusion warm-up does not repair it, but it does
+something interesting.** Running the first 30% of the trajectory as
+MultiDiffusion (where structure is still low-frequency and averaging is
+nearly harmless) then switching to 4-stage conditioning gives geobody W1
+0.1619 -- no better than plain stage4. However it produces the **best
+connectivity MAE of any run in the entire addendum, 0.0087, barely 2x
+band** (against raster's 0.0287 and the foundation's 0.0319), and the
+second-best variogram. Averaging early evidently fixes long-range
+connectivity while still destroying body-scale detail, which is a clean
+separation of what the two fusion rules each contribute.
+
+**Finding 11 — trajectory conditioning failed.** The coupled sampler
+scores geobody W1 0.7944, 42x band. Two contributing causes, not
+separable here: (i) the 4-channel model is worse at everything, including
+its clean-context modes (native 0.1740 vs `g2_ext6`'s 0.1138), so half
+the training signal spent on noisy context degraded the model; and
+(ii) on its own weights coupled is still 3.7x worse than raster, so the
+sampler is independently bad. A likely implementation cause is that
+overlapping blocks each hold their own copy of the shared voxels, drift
+apart over the trajectory, and the final Voronoi assignment cuts hard
+between two disagreeing versions. The formulation that avoids this --
+disjoint tiles with a halo, where no voxel is ever owned twice -- needs
+input and output shapes to differ and was not built. The concept is
+therefore not refuted; this realisation of it is.
+
+**Finding 12 — extending the mask set costs accuracy.** `g2_ext6`'s best
+(raster, 0.0914) loses to round-1 crops192 (0.0811) under the same
+sampler. Covering six neighbour configurations instead of three spreads
+the same training budget thinner and drops wells to 20% of samples.
+
+**Standing best is unchanged from round 1: crops192 + raster outpainting
++ overlap 16, geobody W1 0.0735 / extent W1 0.0302**, against the
+foundation model's 0.2121 / 0.0785 -- 2.9x and 2.6x better. No
+scheduler, architecture, loss weighting or precision change explored in
+rounds 2 and 3 improved on it.
