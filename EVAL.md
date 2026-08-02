@@ -851,3 +851,157 @@ rises with conditioning density (Merzoug failure mode) or stays flat.
 **F.6 Coverage map.** RESULTS.md ends with a factual table mapping every
 check in Leuangthong et al. (2004), Boisvert et al. (2010), and Merzoug et
 al. (2025) to its implementation (section/figure) or "deferred (dynamic)".
+
+---
+
+# Addendum G — Assembly-aware training and segmentation-free body-scale metrics (frozen 2026-08-01, before any G-metric computation)
+
+## G.1 Question
+
+Addendum E established that MultiDiffusion assemblies preserve NTG and
+positions in `lobe` but distort body-scale structure (geobody W1 0.2121
+vs a 0.0190 band; extent W1 0.0785 vs 0.0100). Two causes were
+hypothesized: (i) cross-environment contamination from the intrinsically
+elongated `channel:*` families, and (ii) velocity averaging as the fusion
+rule. This addendum records the tests of both, and a candidate fix.
+
+## G.2 Pre-scoring result: contamination refuted (computed 2026-08-01)
+
+The lobe specialist (`lobe_80ep_r2/checkpoints/inference_epoch080.pt`,
+union argmin, val 0.169334) was run through the unmodified E.3/E.4
+pipeline at the identical E.7 condition, seeds, grid and overlap, with
+`--split-seed 20260815`. Result (outputs
+`$WORK/resbench_eval/assembly_lobe_specialist/`):
+
+| comparison | \|dNTG\| | vario MAE | conn. MAE | geobody W1 | extent W1 |
+|---|---|---|---|---|---|
+| band | 0.0001 | 0.0041 | 0.0040 | 0.0190 | 0.0100 |
+| A vs C (native) | 0.0189 | 0.0052 | 0.0128 | 0.0828 | 0.0371 |
+| B vs C (assembly) | 0.0175 | 0.0127 | 0.0175 | 0.2592 | 0.0981 |
+| B vs A (MD effect) | 0.0014 | 0.0117 | 0.0210 | 0.2240 | 0.0976 |
+
+The lobe-only specialist degrades under tiling by the same margin as the
+foundation (B vs A geobody 0.2240 vs 0.2423), so hypothesis (i) is
+**refuted**: the effect is a property of the fusion rule, not of the
+training mix. The specialist additionally acquires stride-locking the
+foundation lacked (stride-40 amplitude 0.0231 mean / 0.0440 max vs an
+engine-concatenation floor of 0.0112 / 0.0283).
+
+Disclosed asymmetry: the foundation assembly used raw `flow_matching.pt`
+while specialists have EMA checkpoints only. Uncorrected, as in E.
+
+## G.3 Pre-scoring result: the crop marginal is not the driver
+
+A second hypothesis — that training on whole 64^3 ResMill domains rather
+than windows of a larger field distorts the tile marginal — was tested
+directly. A new 200,000-volume `lobe` sweep at 192x192x32 (build grid
+208x208x50, crop 8/8/9) reuses `build_jobs` with the production seed and
+count, so it realizes the SAME parameter draws and volumes pair exactly
+by ResMill seed. Over 150 matched pairs, native 64^3 vs a centred 64-crop
+of 192^3: NTG +2.5%, body count +4.0%, median body +3.5%, mean chord
+(major) +0.7%, chord anisotropy +0.6%, largest fraction -10.3%; binned by
+requested `width_cells` there is no systematic gap for bodies wider than
+the 64-cell cube. A few percent cannot account for a geobody W1 of 0.21,
+so this mechanism is **minor**. Script:
+`ResFlow_ls6/scripts/tier2/paired_marginal_check.py`.
+
+## G.4 Intervention under test
+
+Replace velocity averaging with conditioning. Blocks are generated in
+raster order and each block receives its already-generated neighbours'
+overlap region as known data through the existing 3-channel inpainting
+interface ("outpainting"). Blocks on an anti-diagonal i + j = k are
+mutually independent and are sampled as one batch.
+
+This requires slab-shaped training masks, which no existing checkpoint
+has seen. Two models are trained, both 80 epochs / 180,000 volumes /
+468 steps per epoch at global batch 384 — **identical exposure and
+schedule to the lobe specialist** — and identical to it in every other
+respect (UNet3D, FlowMatching drop_prob 0.1, peak LR 1e-3*sqrt(12),
+warmup 4 -> cosine T_max 76, EMA 0.9999, foundation `cond_stats.npz`):
+
+- **native64** (torch seed 8201): original 64^3 lobe training split, mask
+  distribution changed to 30% empty / 35% wells / 35% context slab.
+  Isolates the MASK change.
+- **crops192** (torch seed 8202): same masks, each sample a random
+  64x64x32 crop of a 192x192x32 volume (deterministic 180,000-volume
+  subset, `default_rng(20260801)` permutation; tail 20,000 held out).
+  Isolates the DATA change on top of native64.
+
+Context slabs are L-shaped (left and/or top arm), the configuration drawn
+with raster-order frequencies for a 10x10 grid (1 : 9 : 9 : 81 for
+none : left : top : both), and the slab width drawn uniformly from
+[8, 32] cells so generation-time overlap can be swept without retraining.
+Conditioning for crops is read from the PARENT volume, not recomputed on
+the crop.
+
+Checkpoint selection: validation argmin under the **unmodified E.3 rule**
+(`eval_val_specialist.py`, lobe validation split, wells-only masks, K=4,
+seed 20260901), so selection is identical across specialist, native64 and
+crops192. Disclosed: native64/crops192 saw wells in 35% of training
+samples rather than 70%, so this yardstick mildly disfavours them; the
+bias is conservative with respect to any claim that they improve.
+
+## G.5 Scored comparisons
+
+At the E.7 condition, seeds, grid (10x10) and overlap (24), each model
+produces: (A) 250 native volumes, (B1) 10 MultiDiffusion assemblies,
+(B2) 10 outpainting assemblies. B1 and B2 differ **only** in the fusion
+rule. Scored with the E.4 metrics and the frozen E.7 band
+(`--split-seed 20260815`) against the published engine reference:
+B1 vs C, B2 vs C, A vs C, and B2 vs B1. Headline claim is that
+B2 vs C improves on B1 vs C in geobody W1 and extent W1.
+
+Comparison chain: specialist -> native64 isolates the mask change;
+native64 -> crops192 isolates the data change.
+
+## G.6 New metrics (segmentation-free; `resbench/anisotropy.py`)
+
+The E.4 body metrics rest on 6-connected labelling, which merges bodies
+wherever sand amalgamates — and in `lobe` amalgamation is physically
+real, so the engine reference has merged bodies too. Per-object width,
+length or aspect ratio therefore inherits an arbitrary decision about
+where one lobe ends. Primary estimators avoid segmentation entirely:
+
+1. **Directional chord lengths** — linear intercepts along parallel scan
+   lines at a given azimuth, pooled over z. Sampling is linear (order=1)
+   thresholded at 0.5; nearest-neighbour sampling shatters chords that
+   graze a rasterized boundary (measured aspect ratio 1.58 instead of
+   2.00 at azimuth 45 on an analytic ellipse, and *worse* with a finer
+   step). Chords touching a scan line's end are censored and dropped.
+   `chord_anisotropy` = mean chord along the azimuth / mean chord
+   perpendicular; W1 is taken on log10 chord lengths, matching the
+   `geobody_w1` convention.
+2. **Directional variogram ranges** — gamma(h) along the azimuth and its
+   perpendicular; practical range = first lag reaching 0.95 of the
+   **theoretical** indicator sill p(1-p) (not the empirical max of gamma,
+   which a hole effect can push out of reach); anisotropy = range ratio.
+   Structure longer than max_lag returns NaN rather than max_lag.
+
+Validation: for an isolated ellipse the mean chord along a semi-axis is
+analytically a*pi/2, so the anisotropy ratio must recover the aspect
+ratio exactly, independent of size; recovered to within 3% at azimuths
+0/45/90 (`tests/test_anisotropy.py`, 19 tests).
+
+Disclosed limitation: a residual rasterization bias up to ~13% remains at
+off-axis azimuths (chord splitting). It cancels whenever both sides are
+measured at the same azimuth, which every scored comparison here is, and
+absolute anisotropy is therefore **never** compared against a requested
+`asp`. A `gap_close` parameter reduces it to ~3% (saturating at 2 cells)
+but **defaults to 0 and stays there for body-scale scoring**, because
+closing 1-2 cell gaps would erase exactly the thin mud drapes whose
+welding is the effect under study; a regression test guards this.
+
+3. **Conditioning adherence** — realized size estimators regressed
+   against requested `width_cells` / `depth_cells` / `asp` over a Sobol
+   sweep of the conditioning range. The reference is the **engine's own**
+   calibration curve at the same requested values (the engine does not
+   hit its targets exactly either); the score is the distance between the
+   model's curve and the engine's. Size metrics are always
+   model-vs-engine, never model-vs-requested-value.
+
+## G.7 Standing component
+
+A model claiming beyond-training-extent generation may submit either
+fusion rule; both are scored against the same published reference with
+the E.4 metrics plus G.6, and the fusion rule is reported alongside.
