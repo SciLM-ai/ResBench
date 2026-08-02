@@ -580,3 +580,70 @@ any artifact is flat (0.974 → 0.981 → 0.981, overlapping Wilson CIs).
   four *outside* cells. Report absolute values alongside verdicts.
 - **NTG sign consistency**: 6/8 environments slightly under-generate sand;
   all within or near band individually, pooled |ΔNTG| = 0.0034 (inside).
+
+## Assembly-aware training and outpainting fusion (EVAL.md Addendum G — scored)
+
+Two 80-epoch lobe models at matched exposure to the specialist (180,000
+volumes, 468 steps/epoch, global batch 384), differing from it only in the
+mask distribution (30% empty / 35% wells / 35% L-shaped neighbour-context
+slab) and, for `crops192`, in training on random 64-crops of 192x192x32
+volumes. Validation argmin (unmodified E.3 rule) selected epoch 80 for
+both: native64 0.165818, crops192 0.165053 — both below the specialist's
+0.169334 on the same yardstick. Each model generated 250 native volumes
+plus 10 MultiDiffusion and 10 outpainting assemblies at the E.7 condition,
+seeds, grid and overlap; B1/B2 differ ONLY in the fusion rule.
+
+Band: |dNTG| 0.0001, vario 0.0041, conn 0.0040, geobody 0.0190, extent 0.0100.
+
+| model | fusion | comparison | \|dNTG\| | vario | conn | geobody W1 | extent W1 |
+|---|---|---|---|---|---|---|---|
+| foundation | multi | B vs C | 0.0138 | 0.0127 | 0.0319 | 0.2121 | 0.0785 |
+| specialist | multi | B vs C | 0.0175 | 0.0127 | 0.0175 | 0.2592 | 0.0981 |
+| native64 | multi | B vs C | 0.0076 | 0.0144 | 0.0217 | 0.0769 | 0.0337 |
+| native64 | outpaint | B vs C | 0.0106 | 0.0088 | 0.0365 | 0.1370 | 0.0650 |
+| crops192 | multi | B vs C | 0.0062 | 0.0144 | 0.0166 | 0.0877 | 0.0356 |
+| **crops192** | **outpaint** | **B vs C** | **0.0004** | 0.0130 | 0.0184 | **0.0811** | **0.0320** |
+| foundation | multi | B vs A | 0.0137 | 0.0134 | 0.0317 | 0.2423 | 0.0966 |
+| specialist | multi | B vs A | 0.0014 | 0.0117 | 0.0210 | 0.2240 | 0.0976 |
+| crops192 | multi | B vs A | 0.0020 | 0.0061 | 0.0105 | 0.1011 | 0.0460 |
+| **crops192** | **outpaint** | **B vs A** | 0.0046 | 0.0076 | 0.0110 | **0.0698** | **0.0322** |
+| crops192 | — | A vs C | 0.0042 | 0.0189 | 0.0242 | 0.0994 | 0.0524 |
+| specialist | — | A vs C | 0.0189 | 0.0052 | 0.0128 | 0.0828 | 0.0371 |
+
+**Finding 1 — the body-scale failure is largely fixed.** `crops192` +
+outpainting cuts assembly geobody W1 from the foundation's 0.2121 to
+0.0811 (2.6x) and extent W1 from 0.0785 to 0.0320 (2.5x). The isolated
+tiling penalty (B vs A) drops from 0.2423 to 0.0698, a 3.5x reduction:
+tiling still costs something, but no longer dominates. NTG becomes almost
+exact (|dNTG| 0.0004, 4x band, vs the foundation's 0.0138 at 138x band).
+
+**Finding 2 — outpainting beats velocity averaging, on the same weights.**
+For `crops192`, outpaint vs multi: geobody 0.0811 vs 0.0877, extent 0.0320
+vs 0.0356, |dNTG| 0.0004 vs 0.0062, and tiling penalty 0.0698 vs 0.1011.
+Consistent but modest; most of the gain came from the training change, not
+the sampler swap.
+
+**Finding 3 — a native-generation cost.** Slab training slightly degrades
+single-volume generation: `crops192` A vs C geobody 0.0994 vs the
+specialist's 0.0828, variogram 0.0189 vs 0.0052. The models are better for
+assembly and marginally worse standalone.
+
+**Finding 4 — the ablation is INCONCLUSIVE; native64 is anomalous.**
+`native64`'s unconditional generation collapsed into over-merged bodies:
+median geobody 119.1 voxels vs the engine's 25.4 and the specialist's 10.1
+(NTG correct at 0.4997, body count 50.1 vs 61.0), giving A vs C geobody
+0.3511. Its assembly numbers are therefore not interpretable as a clean
+"mask change only" arm, and outpaint under-performs multi for it alone
+(0.1370 vs 0.0769) — the reverse of every other comparison. Two
+explanations are not separable at n=1 seed: (a) the large-domain data
+genuinely prevents the pathology, or (b) seed instability, for which there
+is precedent — the lobe specialist itself diverged at seed 8102 and needed
+the E.3 one-retry. A seed retry on native64 is required before any claim
+about what the 192 dataset contributes.
+
+**Seam diagnostic** (stride-40 amplitude, engine-concatenation floor
+0.0112 mean / 0.0283 max): crops192 multi 0.0062/0.0127 (below floor,
+best of all runs); crops192 outpaint 0.0139/0.0209; specialist multi
+0.0231/0.0440; native64 outpaint 0.0409/0.0706. Raster-order outpainting
+introduces a mild directional periodicity, as expected, but for crops192
+it stays at engine-noise level.
