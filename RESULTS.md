@@ -647,3 +647,77 @@ best of all runs); crops192 outpaint 0.0139/0.0209; specialist multi
 0.0231/0.0440; native64 outpaint 0.0409/0.0706. Raster-order outpainting
 introduces a mild directional periodicity, as expected, but for crops192
 it stays at engine-noise level.
+
+### Addendum G round 2 — architecture, loss weighting, precision, overlap (scored)
+
+Five further 80-epoch arms at matched exposure (180,000 volumes, 468
+steps/epoch, global batch 384), all with the masked loss and bf16
+autocast, plus a generation-time overlap sweep on the round-1 winner.
+Validation argmin (unmodified E.3 rule, architecture-aware loader) chose
+epoch 80 for every arm except bf_dit_lr (epoch 50).
+
+| arm | change | val loss | geobody W1 (B vs C, outpaint) | extent W1 |
+|---|---|---|---|---|
+| band | | | 0.0190 | 0.0100 |
+| crops192 (round 1, fp32, unmasked) | — | — | **0.0811** | **0.0320** |
+| bf_unet | masked loss + bf16 | 0.164809 | 0.0867 | 0.0401 |
+| bf_attn | + mid self-attention | **0.162352** | 0.1038 | 0.0495 |
+| bf_nat64 | native64 data | 0.170169 | 0.1153 | 0.0620 |
+| bf_dit | DiT3D 33M, matched LR | 0.525145 | **0.9663** | 0.4492 |
+| bf_dit_lr | DiT3D, LR 1e-4 | 0.859822 | **1.0601** | 0.5033 |
+
+**Finding 5 — DiT fails at this budget, decisively.** Geobody W1 0.97-1.06
+is ~50x band and connectivity MAE 0.37 is ~90x band, at both learning
+rates. LR 1e-4 (the DiT-paper value) barely trained at all: final training
+loss 1.6183 against an initialisation loss of 2.00, refuting the
+hypothesis that the inherited 3.46e-3 was too high. Two scaled variants
+launched to tune it -- patch (4,4,4) and hidden 512 / depth 16 -- both
+**diverged to NaN** mid-training (epochs 56 and 43) at the matched LR.
+DiT is squeezed between divergence at high LR and non-convergence at low
+LR under 37,440 steps; it needs a training budget this protocol does not
+have, not better hyperparameters.
+
+**Finding 6 — attention does not help, and validation loss actively
+misleads here.** `bf_attn` has the BEST validation loss of any arm
+(0.162352, below plain `bf_unet`'s 0.164809) yet is clearly worse on the
+geostatistical metrics (geobody 0.1038 vs 0.0867, extent 0.0495 vs
+0.0401). Masked-MSE and body-scale structure disagree in rank order, so
+checkpoint/architecture selection on validation loss alone is unsafe for
+this task. A second attention level at 32x32x16 is infeasible: full
+attention there is 16,384 tokens and OOMs at 192 GiB.
+
+**Finding 7 — the round-1 ablation resolves; the large-domain data is
+what matters.** Native-generation geobody W1 (A vs C), two seeds and two
+loss variants each: native64 0.3511 (seed 8201, unmasked, fp32) and
+0.2514 (seed 8206, masked, bf16); crops192 0.0994 (seed 8202) and 0.1088
+(seed 8203). native64 is pathologically over-merged in both
+configurations and crops192 is healthy in both, so the round-1 anomaly
+was not seed luck. The masked loss improved native64 (0.3511 -> 0.2514)
+without curing it, and slightly *hurt* crops192 (0.0811 -> 0.0867): a real
+bug, but not the dominant one.
+
+**Finding 8 — under outpainting, overlap barely matters.** Sweeping the
+generation-time overlap on the round-1 winner (training randomised the
+slab width over [8,32], so no retraining is needed). Tiles are a centred
+5x5 grid of 64-cell tiles, origin (extent - 320)//2, which reproduces the
+frozen 52 exactly at the deployed 424:
+
+| overlap | extent | \|dNTG\| | vario | conn | geobody W1 | extent W1 |
+|---|---|---|---|---|---|---|
+| band | — | 0.0001 | 0.0041 | 0.0040 | 0.0190 | 0.0100 |
+| 8 | 568 | 0.0008 | 0.0147 | 0.0179 | 0.0818 | 0.0401 |
+| 12 | 532 | 0.0013 | 0.0146 | 0.0160 | 0.0756 | 0.0358 |
+| **16** | 496 | 0.0017 | 0.0136 | 0.0161 | **0.0735** | **0.0302** |
+| 24 (deployed) | 424 | 0.0004 | 0.0130 | 0.0184 | 0.0811 | 0.0320 |
+| 32 | 352 | 0.0009 | 0.0141 | 0.0170 | 0.0758 | 0.0317 |
+
+Everything lies in 0.0735-0.0818, a 10% spread, with no monotone trend.
+That is itself a mechanism check: under velocity averaging the overlap
+controls how much of the volume is smeared (84% at overlap 24), so it
+should matter a great deal; under outpainting the fusion is exact, so it
+should not -- and it does not.
+
+**Standing best configuration: crops192 + outpainting + overlap 16 —
+geobody W1 0.0735, extent W1 0.0302**, against the foundation model's
+0.2121 / 0.0785 under the deployed MultiDiffusion tiling: **2.9x and 2.6x
+better**. Still 3.9x and 3.0x band, so the gap is reduced, not closed.
