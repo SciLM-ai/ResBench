@@ -36,3 +36,38 @@ def test_tiles_cover_the_centre(tmp_path):
     tiles, _, _ = asm.cut_tiles(tmp_path)
     assert tiles.shape == (asm.TILE_N ** 2, asm.TILE, asm.TILE, 32)
     assert tiles.sum() == b.sum(), 'the centre of the field must be scored'
+
+
+def _field(tmp_path, ext, seed=0):
+    rng = np.random.default_rng(seed)
+    b = (rng.random((ext, ext, 32)) < 0.5).astype(np.int8)
+    np.savez_compressed(tmp_path / 'assembly_00.npz', binary=b)
+    return tmp_path
+
+
+def test_default_layout_is_unchanged_by_the_new_options(tmp_path):
+    """The frozen E.2 layout must be bit-identical when no option is passed."""
+    d = _field(tmp_path, 424)
+    base, _, _ = asm.cut_tiles(d)
+    same, _, _ = asm.cut_tiles(d, origin=None, full_coverage=False)
+    assert np.array_equal(base, same)
+    pinned, _, _ = asm.cut_tiles(d, origin=asm.tile_origin(424))
+    assert np.array_equal(base, pinned)
+
+
+def test_pinned_origin_actually_moves_the_tiles(tmp_path):
+    d = _field(tmp_path, 532, seed=1)
+    a, _, _ = asm.cut_tiles(d, origin=0)
+    b, _, _ = asm.cut_tiles(d, origin=532 - asm.TILE_N * asm.TILE)
+    assert a.shape == b.shape
+    assert not np.array_equal(a, b)
+
+
+def test_full_coverage_uses_almost_the_whole_field(tmp_path):
+    d = _field(tmp_path, 532, seed=2)
+    sub, _, _ = asm.cut_tiles(d)
+    full, _, _ = asm.cut_tiles(d, full_coverage=True)
+    assert asm.n_disjoint(532) == 8 and asm.n_disjoint(424) == 6
+    assert sub.shape[0] == asm.TILE_N ** 2
+    assert full.shape[0] == asm.n_disjoint(532) ** 2
+    assert full.shape[0] > sub.shape[0]

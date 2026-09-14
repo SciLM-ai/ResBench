@@ -48,15 +48,35 @@ def load_npz_dir(d, slug):
     return np.load(f, allow_pickle=True)['volumes']
 
 
-def cut_tiles(assembly_dir):
+def n_disjoint(extent, tile=TILE):
+    """How many disjoint `tile`-cubes fit along one axis of `extent` cells."""
+    return max(extent // tile, 1)
+
+
+def cut_tiles(assembly_dir, origin=None, full_coverage=False):
+    """Cut the scoring tiles out of each assembled field.
+
+    Defaults reproduce the frozen E.2 layout exactly: a centred TILE_N x TILE_N
+    subgrid. `origin` pins the subgrid corner instead of centring it, which is
+    what the placement-sensitivity study varies. `full_coverage` instead takes
+    every disjoint tile that fits, which removes the origin as a free parameter
+    altogether (see PROPOSED_EXTENSIONS.md section 6).
+    """
     tiles, profiles_x, profiles_y = [], [], []
     for f in sorted(Path(assembly_dir).glob('assembly_*.npz')):
         b = np.load(f)['binary']
         profiles_x.append(b.mean(axis=(1, 2)))
         profiles_y.append(b.mean(axis=(0, 2)))
-        ox, oy = tile_origin(b.shape[0]), tile_origin(b.shape[1])
-        for i in range(TILE_N):
-            for j in range(TILE_N):
+        if full_coverage:
+            nx, ny = n_disjoint(b.shape[0]), n_disjoint(b.shape[1])
+            ox = (b.shape[0] - nx * TILE) // 2
+            oy = (b.shape[1] - ny * TILE) // 2
+        else:
+            nx = ny = TILE_N
+            ox = tile_origin(b.shape[0]) if origin is None else origin
+            oy = tile_origin(b.shape[1]) if origin is None else origin
+        for i in range(nx):
+            for j in range(ny):
                 x0 = ox + i * TILE
                 y0 = oy + j * TILE
                 tiles.append(b[x0:x0 + TILE, y0:y0 + TILE, :])
@@ -122,6 +142,16 @@ def main():
                          'overlap-24 stride; an overlap-12 run has stride 52 '
                          'and a tiling-free run has none, in which case the '
                          'amplitude at 40 measures nothing.')
+    ap.add_argument('--tile-origin', type=int, default=None,
+                    help='pin the E.2 subgrid corner instead of centring it. '
+                         'The score depends on this at the 0.003-0.012 level '
+                         'on geobody W1, comparable to between-model gaps, so '
+                         'it is exposed for sensitivity studies only.')
+    ap.add_argument('--full-coverage', action='store_true',
+                    help='score every disjoint 64-cube that fits instead of a '
+                         'centred 5x5 subgrid, removing the origin as a free '
+                         'parameter. Not the frozen E.2 layout: report it '
+                         'alongside, not instead of, the default.')
     args = ap.parse_args()
     stride_period = args.stride_period
     SPLIT_SEED = args.split_seed
@@ -129,7 +159,8 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
 
     A = load_npz_dir(args.native_dir, args.env_slug)
-    B, profs_x, profs_y = cut_tiles(args.assembly_dir)
+    B, profs_x, profs_y = cut_tiles(args.assembly_dir, origin=args.tile_origin,
+                                    full_coverage=args.full_coverage)
     C = load_npz_dir(args.engine_dir, args.env_slug)
     print(f'A(native)={A.shape} B(tiles)={B.shape} C(engine)={C.shape}')
 

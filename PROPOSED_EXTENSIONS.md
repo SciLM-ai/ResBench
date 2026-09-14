@@ -188,3 +188,95 @@ Caveat on the bands: they are split-halves of 16 engine fields (8 vs 8) and
 are themselves noisy — the Euler band is 20.64 at 424 cells but 2.66 at 532,
 a gap larger than the change in field size explains. Absolute deviations are
 the robust part. More engine fields are being generated to tighten them.
+
+## 6. The tile-grid ORIGIN is an unpinned free parameter, and it moves scores
+## more than the models differ (2026-09-14)
+
+§1 fixed the tile grid to be centred at any extent. Centring is the right
+convention, but it exposed a second, larger problem: **nothing in the protocol
+makes the origin meaningful, and the score depends on it strongly.**
+
+Addendum E scores a 5x5 subgrid of 64-cubes = 320 cells. At the frozen 424
+extent that is 75% of the field and the origin can only range over [0, 104].
+At 532 it is 36% of the field and the origin ranges over [0, 212]. Bodies are
+cut differently at every placement, so the pooled body-size distribution — and
+therefore geobody W1 — moves.
+
+Measured on real assemblies, 9 origins spanning the full legal range
+(`specialist_runs/tile_placement_sens.py`, `placement_v2.py`):
+
+| model | geobody mean | sd | range |
+|---|---|---|---|
+| rope_big_lr1e3 | 0.0623 | 0.0074 | 0.0529 - 0.0710 |
+| rope_big_t100 | 0.0648 | 0.0050 | 0.0576 - 0.0716 |
+| rope_t100_lr1e3 | 0.0708 | 0.0041 | 0.0634 - 0.0763 |
+| rope_t100 (ep 60) | 0.0919 | 0.0121 | 0.0731 - 0.1118 |
+| rope_zconv | 0.1001 | 0.0118 | |
+| tiled p442 4-stage | 0.1152 | 0.0112 | |
+| UNet outpaint (424) | 0.0896 | 0.0034 | |
+
+**A single-placement geobody W1 carries sd 0.003-0.012 from the origin alone.**
+The gap between our two best models is 0.0025. So the published ranking of the
+top of a model table can be an artifact of where the subgrid happened to sit.
+This is measurement noise, not model variance: the model is identical across
+the nine scores.
+
+The corresponding connectivity sds are 6-10x smaller (0.0006-0.0030), so
+connectivity MAE is far more placement-robust than geobody W1.
+
+### 6.1 Two fixes, neither of which breaks the frozen protocol
+
+1. **Report paired comparisons.** Scoring every model at the SAME origins makes
+   model-vs-model differences paired, and the shared placement component
+   cancels. On the four arms above this turns an unreadable table into a
+   readable one: rope_big_lr1e3 vs rope_big_t100 is -0.0025 (t = -1.8,
+   indistinguishable) while rope_big_t100 vs rope_t100_lr1e3 is -0.0060
+   (t = -2.9, distinguishable). Caveat: the 9 origins overlap heavily, so the
+   samples are not independent and the t values are optimistic; the direction
+   is trustworthy, the exact significance is not.
+2. **Or score every disjoint tile.** An 8x8 grid of 64-cubes covers 512 of 532
+   cells (96%) and leaves no free parameter. This is a strictly better
+   estimator and costs nothing but CPU. It changes the numbers, so it belongs
+   alongside the frozen E.2 column rather than replacing it.
+
+### 6.2 Consequence for §5
+
+This compounds the §5 finding rather than competing with it. §5 says the
+reference has the wrong extent, which biases every score by a fixed amount.
+§6 says the estimator has an unpinned nuisance parameter, which adds noise
+comparable to the between-model signal. The first moves the floor; the second
+blurs the ordering above it.
+
+### 6.3 Full-coverage results, and the one thing it does NOT equalise
+
+Scoring every disjoint tile (`--full-coverage`) against the frozen 5x5 subgrid
+averaged over 9 origins. Both columns are honest; they answer different
+questions.
+
+| model | extent | 5x5 mean over origins | full coverage |
+|---|---|---|---|
+| rope_big_lr1e3 | 532 | 0.0625 +- 0.0070 | 0.0580 |
+| rope_t100_lr1e3 | 532 | 0.0707 +- 0.0036 | 0.0616 |
+| rope_big_t100 | 532 | 0.0661 +- 0.0044 | 0.0671 |
+| rope_t100 (ep 60) | 532 | 0.0921 +- 0.0107 | 0.0770 |
+| rope_zconv | 532 | 0.1001 +- 0.0118 | 0.0935 |
+| UNet outpaint | 424 | 0.0896 +- 0.0034 | 0.0910 |
+| UNet MultiDiffusion | 424 | 0.1108 +- 0.0068 | 0.1060 |
+| tiled p442 4-stage | 532 | 0.1152 +- 0.0112 | 0.1138 |
+
+Most numbers fall under full coverage. That is expected and is a point in its
+favour: W1 between empirical distributions is positively biased at small
+sample size, and full coverage raises the tile count per field from 25 to 64
+(532 cells) or 36 (424 cells).
+
+**But that is exactly what it fails to equalise.** A 532-cell field yields 64
+tiles and a 424-cell field only 36, so under `--full-coverage` the larger field
+gets the smaller W1 bias purely from having more samples. Comparing a
+whole-field model at 532 against the UNet at 424 in that column therefore
+flatters the whole-field model by an unknown amount.
+
+**For cross-extent comparisons use the 5x5 column averaged over origins:** it
+holds the tile count at 25 per field for every model regardless of extent, so
+the small-sample bias is common to all rows and cancels. Use `--full-coverage`
+when comparing models at the SAME extent, where it is strictly the better
+estimator.
