@@ -1,4 +1,16 @@
-"""Assembly-consistency scoring (EVAL.md Addendum E.4/E.5).
+"""SUPERSEDED — archived exactly as it was run for RESULTS.md.
+
+This copy hard-codes the tile grid at origin (52, 52), which is centred only
+for the 424-cell assembly it was written for. At any other extent it samples
+an off-centre corner of the field. Do NOT use it to score new work: use the
+maintained `analysis/assembly_stats.py`, which derives a centred origin and
+adds --tile-origin / --full-coverage. See PROPOSED_EXTENSIONS.md section 1.
+
+Kept unmodified so the numbers in RESULTS.md remain reproducible.
+
+---
+
+Assembly-consistency scoring (EVAL.md Addendum E.4/E.5).
 
 Cuts 5x5 non-overlapping (64,64,32) tiles from each assembly (origin (52,52),
 stride 64), then scores B vs C, A vs C, B vs A with the E.4 metrics against

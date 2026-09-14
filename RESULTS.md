@@ -41,7 +41,9 @@ per-environment rows are the informative ones for this column.
 Figures: [NTG parity](results/ntg_parity.pdf) ·
 [variogram overlays](results/variogram_overlays.pdf) ·
 [connectivity + geobody CDFs](results/connectivity_geobody.pdf)
-(PNG versions alongside; all curves/CIs in `results/report.npy`).
+(PNG versions alongside. The raw `report.npy` holding every curve and CI is
+4.5 MB and is not shipped; regenerate it with `resbench.run`, or read the
+numbers from the tables in this file.)
 
 ## Per-metric interpretation
 
