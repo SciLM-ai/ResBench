@@ -89,6 +89,20 @@ python analysis/assembly_stats.py --env-slug lobe \
   --engine-dir references/assembly --out-dir scored
 ```
 
+Which script implements which component:
+
+| component | script |
+|---|---|
+| E.4/E.5 assembly consistency | `analysis/assembly_stats.py` |
+| E additive diagnostics, G.6 chords | `analysis/assembly_stats_ext.py` |
+| F.1 MPS histograms, F.2 runs, F.5 artifact rate | `analysis/acceptance_ext.py` |
+| F.3 reliability diagram + ECE | `analysis/reliability.py` |
+| F.4 memorization / novelty | `analysis/memorization.py` |
+
+F.6 is a coverage table in RESULTS.md and needs no code. The F.5 threshold is
+defined once, in `resbench.metrics.ARTIFACT_MAX`, and a test forbids any script
+from re-declaring it.
+
 Two caveats are documented in `PROPOSED_EXTENSIONS.md` and are worth reading
 before quoting a number. The Addendum E tile grid scores a 5x5 subgrid of
 64-cubes whose placement is a free parameter at extents other than 424, and it
