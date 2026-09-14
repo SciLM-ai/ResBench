@@ -100,15 +100,55 @@ identical E.7 conditioning and grid convention (dx = dy = 100 m, dz = 1 m,
 statistics finally have a reference. `--engine-big-dir` enables that
 comparison, with its own split-half band.
 
-**Caution, measured on a 2-realisation pilot and to be confirmed at n=16:**
+### 5.1 CONFIRMED (16 independent fields, 400 tiles): the engine does not
+### match itself under the assembly protocol
+
 64-cubes cut from large engine fields do **not** reproduce the frozen
-64-cube reference — geobody W1 0.044 against a 0.019 band, connectivity MAE
-0.044 against 0.004. Addendum G.3 documented a related offset (native 64^3
-vs a centred 64-crop of 192^3: NTG +2.5%, largest fraction -10.3%) and
-judged it minor. If the larger measurement holds, then part of every model's
-B_vs_C score is an engine-level protocol offset rather than model error, and
-the effective floor for the assembly task is ~0.044 rather than the 0.019
-split-half band.
+64-cube reference. Both sides are ResMill at identical E.7 conditioning; the
+only difference is that one set was generated as 64-cube volumes and the
+other cut out of 532-cube fields:
+
+| metric | engine tiles vs frozen ref | split-half band | best model B_vs_C | offset as share of model score |
+|---|---|---|---|---|
+| geobody W1 | 0.0510 | 0.0190 | 0.0627 | 81% |
+| connectivity MAE | 0.0410 | 0.0040 | 0.0318 | **129%** |
+| variogram MAE | 0.0096 | 0.0041 | 0.0133 | 72% |
+| \|dNTG\| | 0.0073 | 0.0001 | 0.0081 | 90% |
+
+Mechanism: a natively generated 64-cube gets a full complement of lobes
+fitted into a small box; a 64-cube window cut from a large field sees
+whatever crosses it, including bodies the window truncates that were whole
+in the larger domain. Addendum G.3 measured a related offset (native 64^3 vs
+a centred 64-crop of 192^3: NTG +2.5%, largest fraction -10.3%) and judged
+it minor for its purpose; at assembly-scoring scale it is not.
+
+**Consequences.** (i) The effective floor for the assembly task is ~0.051
+geobody and ~0.041 connectivity, not the 0.019 / 0.004 split-half band.
+(ii) Model rankings are unaffected in direction — every model went through
+the same biased comparison — but absolute distances have been overstated for
+all of them. (iii) The correct comparison is assemblies against large engine
+fields, which `--engine-big-dir` now performs.
+
+### 5.2 What changes when the reference is right
+
+Same model (77M whole-field RoPE DiT), same assemblies, two references:
+
+| metric | vs 64-cube tiles | vs 532-cell engine fields |
+|---|---|---|
+| global connectivity Gamma | 0.0536 | **0.0005** |
+| largest-body fraction | 0.0994 | **0.0058** |
+| chord anisotropy | 0.0421 | **0.0024 (inside band)** |
+| chord W1 along azimuth | 0.0276 | 0.0162 |
+| mass-weighted geobody W1 | 0.1169 | 0.0525 |
+| Euler characteristic / 1e6 | 49.1 | 8.96 |
+
+Amalgamation and lobe shape — the properties Addendum G was written to
+chase — are essentially exact against the right reference. What remains
+genuinely outside band is FRAGMENTATION (Euler 3.4x band, artifact rate
+near band, mass geobody 8x band): the model makes too many small pieces,
+which independently confirms a vertical-stacking deficit found in the
+model work (plan-view statistics match the engine while 3D body counts are
+2.8x too high).
 
 ## Usage
 
