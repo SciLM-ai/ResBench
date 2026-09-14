@@ -22,10 +22,25 @@ from scipy.stats import wasserstein_distance
 
 from resbench import metrics
 
-TILE_ORIGIN = 52
 TILE_N = 5
 TILE = 64
-STRIDE_PERIOD = 40  # block stride of the overlap-24 tiling
+# E.2 fixed the tile grid at origin (52, 52) for the 424-cell overlap-24
+# assembly, where 52 = (424 - 5*64) // 2 is exactly centred. Deriving the
+# origin instead keeps that layout bit-identical (a regression test below
+# asserts it) and keeps the grid centred for any other extent. Before this,
+# a 532-cell overlap-12 assembly was sampled at [52, 372) — a 52 / 160 cell
+# margin split, i.e. a corner, not the centre — and a 1572-cell field had
+# 4% of its area scored, all of it in one corner.
+TILE_ORIGIN_424 = 52
+DEFAULT_STRIDE_PERIOD = 40  # block stride of the overlap-24 tiling
+
+
+def tile_origin(extent, tile_n=TILE_N, tile=TILE):
+    """Centred origin for a `tile_n` x `tile_n` grid of `tile`-cubes."""
+    return max((extent - tile_n * tile) // 2, 0)
+
+
+assert tile_origin(424) == TILE_ORIGIN_424, 'E.2 layout must be unchanged'
 
 
 def load_npz_dir(d, slug):
@@ -39,10 +54,11 @@ def cut_tiles(assembly_dir):
         b = np.load(f)['binary']
         profiles_x.append(b.mean(axis=(1, 2)))
         profiles_y.append(b.mean(axis=(0, 2)))
+        ox, oy = tile_origin(b.shape[0]), tile_origin(b.shape[1])
         for i in range(TILE_N):
             for j in range(TILE_N):
-                x0 = TILE_ORIGIN + i * TILE
-                y0 = TILE_ORIGIN + j * TILE
+                x0 = ox + i * TILE
+                y0 = oy + j * TILE
                 tiles.append(b[x0:x0 + TILE, y0:y0 + TILE, :])
     return np.stack(tiles), profiles_x, profiles_y
 
@@ -100,7 +116,14 @@ def main():
     ap.add_argument('--out-dir', required=True)
     ap.add_argument('--env-slug', default='channel_PV_SHOESTRING')
     ap.add_argument('--split-seed', type=int, default=20260812)
+    ap.add_argument('--stride-period', type=int, default=DEFAULT_STRIDE_PERIOD,
+                    help='block stride of the tiling under test, for the E.5 '
+                         'seam diagnostic. The frozen default 40 is the '
+                         'overlap-24 stride; an overlap-12 run has stride 52 '
+                         'and a tiling-free run has none, in which case the '
+                         'amplitude at 40 measures nothing.')
     args = ap.parse_args()
+    stride_period = args.stride_period
     SPLIT_SEED = args.split_seed
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -127,15 +150,16 @@ def main():
 
     # Seam diagnostic: stride-period amplitude on assembly profiles vs
     # profiles of engine volumes concatenated at the tile size (true seams).
-    asm_amp = [stride_amplitude(pr, STRIDE_PERIOD) for pr in profs_x + profs_y]
+    asm_amp = [stride_amplitude(pr, stride_period) for pr in profs_x + profs_y]
     rng = np.random.default_rng(SPLIT_SEED + 1)
     eng_amp = []
     for _ in range(20):
         pick = rng.choice(len(C), size=7, replace=False)
         concat = np.concatenate([C[k] for k in pick], axis=0)
         eng_amp.append(stride_amplitude(concat.mean(axis=(1, 2)), TILE))
-    seam = {'assembly_amp_at_stride40_mean': float(np.mean(asm_amp)),
-            'assembly_amp_at_stride40_max': float(np.max(asm_amp)),
+    seam = {'stride_period': stride_period,
+            f'assembly_amp_at_stride{stride_period}_mean': float(np.mean(asm_amp)),
+            f'assembly_amp_at_stride{stride_period}_max': float(np.max(asm_amp)),
             'engine_concat_amp_at_period64_mean': float(np.mean(eng_amp)),
             'engine_concat_amp_at_period64_max': float(np.max(eng_amp))}
 
@@ -169,9 +193,9 @@ def main():
     spec = np.mean([[stride_amplitude(pr, per) for per in periods]
                     for pr in profs_x + profs_y], axis=0)
     axes[1].plot(periods, spec, c='#2a78d6', lw=1.4)
-    axes[1].axvline(STRIDE_PERIOD, c='#eb6834', lw=0.9, ls=':')
+    axes[1].axvline(stride_period, c='#eb6834', lw=0.9, ls=':')
     axes[1].axvline(TILE, c='#9a9a9a', lw=0.9, ls=':')
-    axes[1].set_title('mean profile spectrum (dotted: 40, 64)', fontsize=10)
+    axes[1].set_title(f'mean profile spectrum (dotted: {stride_period}, {TILE})', fontsize=10)
     axes[1].set_xlabel('period (cells)')
     bins = np.linspace(0, max(sA['ntg'].max(), sB['ntg'].max(), sC['ntg'].max()) * 1.05, 30)
     for arr, lab, c, ls in ((sC['ntg'], 'engine', '#222222', '-'),
