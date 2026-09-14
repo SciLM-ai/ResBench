@@ -72,11 +72,32 @@ fixed parameters); the mining approach is described in EVAL.md Addendum C.
 EVAL.md            frozen protocol (read this first)
 RESULTS.md         worked example: ResFlow scored on all components
 resbench/          the package (~800 lines): metrics, stats, io, figures, CLI
+analysis/          runnable scorers for the Addendum E/F/G components
 tests/             brute-force verification of every metric
 references/        benchmark reference data (self-contained, ~26 MB)
 results/           the worked example's outputs (tables, figures, manifests)
 paper/analysis/    one-off study scripts behind RESULTS.md (archaeology)
+PROPOSED_EXTENSIONS.md   known limitations of the frozen protocol
 ```
+
+Scoring an assembly (Addendum E) against the shipped reference:
+
+```bash
+python analysis/assembly_stats.py --env-slug lobe \
+  --native-dir <dir of natively generated 64-cubes> \
+  --assembly-dir <dir of assembled fields> \
+  --engine-dir references/assembly --out-dir scored
+```
+
+Two caveats are documented in `PROPOSED_EXTENSIONS.md` and are worth reading
+before quoting a number. The Addendum E tile grid scores a 5x5 subgrid of
+64-cubes whose placement is a free parameter at extents other than 424, and it
+moves geobody W1 by as much as models typically differ from one another --
+`--full-coverage` removes the free parameter, and `--tile-origin` exposes it for
+sensitivity studies. Separately, the reference volumes are generated natively at
+64 cubed, so bodies in them are truncated by construction in a way that bodies
+cut out of a larger field are not; the engine does not match itself under this
+protocol, and the effective floor is well above the quoted split-half band.
 
 Raw engine draw pools (~17 GB; for mining new well patterns or extending
 the references) are published separately with the dataset release.
