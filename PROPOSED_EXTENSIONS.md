@@ -160,3 +160,31 @@ python analysis/assembly_stats_ext.py --native-dir A --assembly-dir B \
     --engine-dir results/assembly_reference --env-slug lobe \
     --engine-big-dir BIG --azimuth 95 --out-dir OUT/ext           # additive
 ```
+
+### 5.3 The ranking of methods changes when the reference has the right extent
+
+Every model generated at 424x424x32 (the overlap-24 layout) and scored
+against 16 engine fields of the SAME extent, identical band:
+
+| model | mass geobody W1 | Gamma | largest frac | Euler /1e6 | chord aniso |
+|---|---|---|---|---|---|
+| engine split-half band | 0.0126 | 0.0002 | 0.0010 | 20.64 | 0.0250 |
+| **whole-field RoPE 77M** | **0.0245** | **0.0004** | **0.0025** | **4.18 (inside)** | **0.0002 (inside)** |
+| whole-field RoPE 33M | 0.0289 | 0.0005 | 0.0042 | 27.36 | 0.0560 |
+| tiled DiT 77M, MultiDiffusion | 0.0857 | 0.0019 | 0.0114 | 14.10 (inside) | 0.0118 (inside) |
+| tiled DiT p442, 4-stage | 0.1464 | 0.0042 | 0.0266 | 38.70 | 0.0613 |
+| UNet EMA, outpaint | 0.2023 | 0.0045 | 0.0206 | 46.29 | 0.0716 |
+| UNet EMA, MultiDiffusion | 0.3657 | 0.0139 | 0.0643 | 49.83 | 0.0831 |
+
+**The frozen protocol ranks UNet-outpaint (geobody W1 0.087) ahead of tiled
+p442 4-stage (0.118). At field scale against a matched reference that
+reverses: 0.2023 vs 0.1464.** Method ranking, not only magnitude, depends on
+whether the reference has the extent of the thing being scored.
+
+Caveat: this table mixes model sizes across the tiled rows, so it supports
+"whole-field beats tiled" but is not a clean fusion-rule comparison.
+
+Caveat on the bands: they are split-halves of 16 engine fields (8 vs 8) and
+are themselves noisy — the Euler band is 20.64 at 424 cells but 2.66 at 532,
+a gap larger than the change in field size explains. Absolute deviations are
+the robust part. More engine fields are being generated to tighten them.
