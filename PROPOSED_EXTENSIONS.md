@@ -280,3 +280,82 @@ holds the tile count at 25 per field for every model regardless of extent, so
 the small-sample bias is common to all rows and cancels. Use `--full-coverage`
 when comparing models at the SAME extent, where it is strictly the better
 estimator.
+
+## 7. Addendum C's modal rule selects the least informative well in the
+## benchmark, and multi-well conditioning is not affordable by rejection (2026-09-15)
+
+C.2 picks, per environment, the **most frequent exact 32-bit well-column
+pattern** among stored unconditional draws. For `lobe` that is
+`00000000000000000000000000000000` -- a completely dry hole. C.2 discloses the
+trade-off ("a typical, high-likelihood, low-information well") but the rule is
+worse than typical: it is pathological.
+
+### 7.1 Why argmax over exact bit patterns always finds the dry hole
+
+Mining every stored `lobe` draw at the C.1 well location (32, 32), n = 14 048:
+
+| well-column sand voxels | share of draws |
+|---|---|
+| 0 (dry) | **4.7%** |
+| 1-4 | 20.7% |
+| 5-8 | 31.8% |
+| 9-12 | 25.6% |
+| 13-16 | 10.9% |
+| 17+ | 6.2% |
+
+A dry hole is **4.7%** of reality. It wins the modal vote only because there is
+exactly ONE way to be all-shale, while sand-bearing columns fragment across
+**4 893 distinct bit strings** (most frequent non-dry pattern: n = 64, i.e.
+0.5%). Argmax over exact patterns is therefore a near-deterministic selector
+for the emptiest datum, in any environment whose columns are mostly not empty.
+It measures conditioning on the one well that conditions nothing.
+
+Compounding it for `lobe`: the selected condition (row_index 8) is itself a
+low-NTG parameter vector (volume NTG 0.126), so a dry hole there is doubly
+unremarkable.
+
+### 7.2 A well constrains LOCALLY, so global summaries cannot detect it
+
+Within a single parameter vector, volume NTG is **invariant** to the well-column
+class (cond_r0008: 0.128 / 0.126 / 0.125 / 0.128 for dry / thin / typical /
+thick). A 32-voxel column cannot move a 131 072-voxel NTG. Any proposal to score
+well conditioning by a global statistic is therefore dead on arrival -- the
+A.5/C.4 entropy-vs-distance estimator is the right instrument and should stay.
+(An earlier draft of this section proposed a "conditional NTG response" metric;
+the table above refutes it.)
+
+The apparent 0.128 -> 0.566 NTG contrast across classes in the POOLED draws is
+entirely a mixing confound: high-NTG parameter vectors produce sand-rich columns.
+
+### 7.3 Stratified informative patterns: what the existing pools already support
+
+Most-matched exact pattern within each geological class, `lobe`, from the same
+14 048 draws (C.3 floor = 50):
+
+| class | share | best exact pattern | n | verdict |
+|---|---|---|---|---|
+| dry | 4.7% | all zeros | 661 | OK (but uninformative) |
+| thin 1-4 | 20.7% | `...0001` | 64 | OK |
+| typical 5-8 | 31.8% | `00000000111111110000000000000000` | 54 | OK |
+| thick 9-16 | 36.6% | `00000000011111111100000000000000` | 53 | OK |
+| amalgamated 17+ | 6.2% | `00000111111111111111110000000000` | 5 | needs top-up |
+
+**Four of five classes already clear the floor with no new engine draws.**
+Proposal: replace the single modal condition with this stratified set, report
+per class, and weight by class share. The dry class is retained as the
+uninformative control rather than as the headline.
+
+### 7.4 Multi-well conditioning is infeasible by exact rejection
+
+Joint patterns at the paper's Figure-3 two-well positions (x = 21, 42; y = 32),
+same pool: **12 368 distinct joint patterns, median count 1.** Only the
+all-dry joint pattern clears the floor (n = 111); the next two are n = 12 and
+n = 11. Reaching 50 accepted for an informative two-well pattern needs roughly
+100x the current pool.
+
+So a multi-well conditional reference cannot be built by rejection at this
+budget. Either the engine budget grows by two orders of magnitude, or the
+estimator changes (e.g. accept within a Hamming tolerance and reweight, trading
+exactness for variance). This should be stated in the protocol rather than left
+for a reader to discover -- as published, ResBench tests conditioning on one
+well, at one location, with one pattern, per environment.
