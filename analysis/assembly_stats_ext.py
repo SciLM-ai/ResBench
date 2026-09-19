@@ -69,7 +69,7 @@ _spec = importlib.util.spec_from_file_location(
 _asm = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_asm)
 
-ARTIFACT_MAX = 8          # F.5
+ARTIFACT_MAX = metrics.ARTIFACT_MAX    # F.5, defined in resbench.metrics
 MIN_BODY = 27             # 3^3
 NAMED_LAGS = (2, 4, 8, 16, 32)
 

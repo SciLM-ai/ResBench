@@ -1,54 +1,100 @@
-"""Volume-directory loading (EVAL.md §8 input contract)."""
+"""Reading submissions and references off disk.
+
+A stack of volumes is an .npz holding `ids` and `volumes`. Nothing here loads
+a checkpoint or imports model code: ResBench only ever sees saved arrays,
+which is what lets any framework be scored.
+
+Large ensembles may be split across several .npz files in a directory. Every
+check summarizes each file and merges, so a directory is never held in memory
+all at once.
+"""
+import json
 from pathlib import Path
 
 import numpy as np
 
-from . import LAYER_TYPES, env_slug
+ENVIRONMENTS = ('lobe', 'channel:PV_SHOESTRING', 'channel:CB_LABYRINTH',
+                'channel:CB_JIGSAW', 'channel:SH_DISTAL', 'channel:SH_PROXIMAL',
+                'channel:MEANDER_OXBOW', 'delta')
+SLUG = {e: e.replace(':', '_') for e in ENVIRONMENTS}
+TASKS = ('unconditional', 'well_conditioned', 'field_scale')
+
+# Field extent per environment. Channels are elongated along flow because that
+# is how a channel belt extends; a square box clips every channel at the same
+# length. Cell size is each environment's own and never changes.
+FIELD_EXTENT = {e: ((512, 512, 32) if e in ('lobe', 'delta') else (512, 64, 32))
+                for e in ENVIRONMENTS}
+NATIVE_SHAPE = (64, 64, 32)
 
 
-def load_volume_dir(path, key='volumes'):
-    """Load one environment directory of `*_*.npz` shards.
+class SubmissionError(Exception):
+    """Something about the submission is wrong, with a message saying what."""
 
-    Returns (ids, array) with rows concatenated in sorted-filename order.
-    """
-    files = sorted(Path(path).glob('*.npz'))
+
+def load_stack(path):
+    z = np.load(path, allow_pickle=True)
+    if 'volumes' not in z:
+        raise SubmissionError(f'{path}: no "volumes" array')
+    vols = z['volumes']
+    ids = z['ids'] if 'ids' in z else np.arange(len(vols)).astype(str)
+    if len(ids) != len(vols):
+        raise SubmissionError(f'{path}: {len(ids)} ids for {len(vols)} volumes')
+    return np.asarray(ids, dtype=object), np.asarray(vols)
+
+
+def iter_shards(directory):
+    """Every .npz in a directory, sorted, as (ids, volumes)."""
+    d = Path(directory)
+    files = sorted(d.glob('*.npz'))
     if not files:
-        raise FileNotFoundError(f'no .npz shards under {path}')
-    ids, arrs = [], []
+        raise SubmissionError(f'{d}: no .npz files')
     for f in files:
-        d = np.load(f, allow_pickle=True)
-        ids += [str(i) for i in d['ids']]
-        arrs.append(d[key])
-    return np.array(ids), np.concatenate(arrs)
+        yield load_stack(f)
 
 
-def load_ensemble(root, key='volumes'):
-    """Load an ensemble root containing one subdir per environment slug.
+def part_dir(root, task, env, kind):
+    return Path(root) / task / SLUG[env] / kind
 
-    Returns {layer_type: (ids, volumes)} in canonical environment order,
-    restricted to environments present under root.
-    """
-    root = Path(root)
+
+def check_shape(vols, expect, where):
+    got = tuple(np.asarray(vols).shape[1:])
+    if got != tuple(expect):
+        raise SubmissionError(f'{where}: volumes are {got}, expected {tuple(expect)}')
+
+
+def check_binary(vols, where):
+    u = np.unique(np.asarray(vols)[:1])
+    if not set(np.asarray(u).ravel().tolist()) <= {0, 1}:
+        raise SubmissionError(f'{where}: values must be 0 (shale) and 1 (sand), '
+                              f'found {sorted(set(u.ravel().tolist()))[:5]}')
+
+
+def read_meta(root):
+    p = Path(root) / 'submission.yaml'
+    if not p.exists():
+        return {}
+    # A deliberately tiny reader: one `key: value` per line. Avoids adding a
+    # YAML dependency for a file this simple.
     out = {}
-    for lt in LAYER_TYPES:
-        d = root / env_slug(lt)
-        if d.is_dir():
-            out[lt] = load_volume_dir(d, key=key)
-    if not out:
-        raise FileNotFoundError(f'no environment subdirs under {root}')
+    for line in p.read_text().splitlines():
+        line = line.split('#', 1)[0].strip()
+        if not line or ':' not in line:
+            continue
+        k, v = line.split(':', 1)
+        out[k.strip()] = v.strip().strip('"\'')
     return out
 
 
-def align(ids_a, vols_a, ids_b, vols_b):
-    """Row-align two (ids, volumes) pairs on shared ids (order of a).
-
-    Ids may carry a '#k' sample suffix on the prediction side; the join key
-    strips it.
-    """
-    def base(i):
-        return i.split('#')[0]
-
-    idx_b = {base(i): j for j, i in enumerate(ids_b)}
-    keep = [j for j, i in enumerate(ids_a) if base(i) in idx_b]
-    sel_b = [idx_b[base(ids_a[j])] for j in keep]
-    return vols_a[keep], vols_b[sel_b], [ids_a[j] for j in keep]
+def load_manifest(reference_root, env):
+    """Per-condition metadata for one environment: target sand fraction,
+    azimuth, well location. This is what `ctx` is built from."""
+    p = Path(reference_root) / 'manifest.csv'
+    if not p.exists():
+        return None
+    import csv
+    rows = []
+    with open(p, newline='') as fh:
+        for r in csv.DictReader(fh):
+            if r.get('environment') == env:
+                rows.append(r)
+    return rows

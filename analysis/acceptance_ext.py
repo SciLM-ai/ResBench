@@ -20,7 +20,6 @@ from resbench import io, metrics                       # noqa: E402
 from resbench.stats import verdict                     # noqa: E402
 
 MPS_SEED, ART_SEED = 20260813, 20260816
-ARTIFACT_MAX = 8          # bodies < 8 voxels
 _G = {}
 
 
@@ -71,8 +70,8 @@ def w1(a, b):
 # ---------------- F.5 artifacts ------------------------------------------
 
 def artifact_counts(vols):
-    return np.array([(metrics.geobody_sizes(v) < ARTIFACT_MAX).sum()
-                     for v in vols], np.int64)
+    # the F.5 threshold lives in resbench.metrics so it cannot drift
+    return metrics.artifact_counts(vols)
 
 
 def wilson(k, n, z=1.96):
@@ -137,6 +136,8 @@ def main():
     ap.add_argument('--pred-dir', required=True)
     ap.add_argument('--well-pred-dir', required=True)
     ap.add_argument('--manifest', required=True)
+    ap.add_argument('--label', default='model',
+                    help='name for the generated ensemble in figure legends')
     ap.add_argument('--out-dir', required=True)
     args = ap.parse_args()
 
@@ -228,7 +229,7 @@ def main():
         top = np.argsort(-p)[:20]
         x = np.arange(20)
         ax.bar(x - 0.2, p[top], 0.4, color=REF_GRAY, label='reference')
-        ax.bar(x + 0.2, q[top], 0.4, color=AXIS_COLORS[0], label='ResFlow')
+        ax.bar(x + 0.2, q[top], 0.4, color=AXIS_COLORS[0], label=args.label)
         ax.set_yscale('log')
         ax.set_xticks(x)
         ax.set_xticklabels([f'{t:08b}' for t in top], rotation=90, fontsize=5.5)

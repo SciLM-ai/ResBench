@@ -6,6 +6,8 @@ functions accept int8/bool arrays with sand = 1 and treat axes (0, 1, 2) =
 (x, y, z). Definitions are frozen in EVAL.md; every function is unit-tested
 against brute force in tests/test_metrics.py.
 """
+from itertools import product
+
 import numpy as np
 from scipy import ndimage
 from scipy.stats import wasserstein_distance
@@ -84,6 +86,20 @@ def geobody_sizes(vol, labels=None):
         return np.empty(0, dtype=np.int64)
     sizes = np.bincount(labels.ravel())[1:]  # drop background
     return np.sort(sizes)[::-1].astype(np.int64)
+
+
+ARTIFACT_MAX = 8  # Addendum F.5: artifacts are 6-connected sand bodies < 8 voxels
+
+
+def artifact_counts(vols, max_size=ARTIFACT_MAX):
+    """Per-volume count of artifact bodies (Addendum F.5).
+
+    One definition shared by the F.5 component (analysis/acceptance_ext.py)
+    and the additive assembly diagnostics (analysis/assembly_stats_ext.py),
+    so the threshold cannot drift between them.
+    """
+    return np.array([(geobody_sizes(v) < max_size).sum() for v in vols],
+                    dtype=np.int64)
 
 
 def largest_fraction(vol, labels=None):
@@ -203,3 +219,162 @@ def sanity_check(ntg_mean, gamma, tau, tau_tol=0.02):
         if len(tt) > 1 and np.any(np.diff(tt) > tau_tol):
             warnings.append(f"axis {a}: tau increases beyond tolerance {tau_tol}")
     return warnings
+
+
+# -- v1 primitives ---------------------------------------------------------
+# Low-level estimators added for the v1 check modules. Everything above this
+# line is unchanged and still unit-tested against brute force.
+
+def max_lags_for(shape):
+    """Half the extent on each axis: the longest lag a volume can support."""
+    return tuple(max(int(n) // 2, 1) for n in shape[:3])
+
+
+def w1(a, b):
+    """Wasserstein-1 between two 1-D samples (area between the CDFs)."""
+    a = np.sort(np.asarray(a, float))
+    b = np.sort(np.asarray(b, float))
+    if a.size == 0 or b.size == 0:
+        return float('nan')
+    q = np.linspace(0.0, 1.0, 1001)
+    return float(np.abs(np.quantile(a, q) - np.quantile(b, q)).mean())
+
+
+def mps_hist(vol):
+    """Counts of each 2x2x2 sand/shale pattern, 256 bins, every offset.
+
+    The eight cells of a block are read in a fixed order and packed into one
+    byte, so a block is a single label in 0..255 rather than a point in 8-D.
+    """
+    v = np.asarray(vol, np.uint8)
+    nx, ny, nz = v.shape[0] - 1, v.shape[1] - 1, v.shape[2] - 1
+    acc = np.zeros((nx, ny, nz), np.uint8)
+    for i, j, k in product((0, 1), repeat=3):
+        acc |= (v[i:nx + i, j:ny + j, k:nz + k] << (4 * i + 2 * j + k))
+    return np.bincount(acc.ravel(), minlength=256).astype(np.int64)
+
+
+def jsd_bits(p, q, eps=1e-300):
+    """Jensen-Shannon divergence in bits between two histograms.
+
+    Symmetric and bounded in [0, 1]; KL is neither, and KL is infinite as soon
+    as one side holds a pattern the other never produced, which with 256 bins
+    always happens.
+    """
+    p = np.asarray(p, float); p = p / p.sum()
+    q = np.asarray(q, float); q = q / q.sum()
+    m = 0.5 * (p + q)
+
+    def kl(a, b):
+        s = a > 0
+        return float((a[s] * np.log2(a[s] / np.maximum(b[s], eps))).sum())
+    return 0.5 * kl(p, m) + 0.5 * kl(q, m)
+
+
+def run_lengths(vol, axis=2):
+    """Lengths of every unbroken sand run along `axis`.
+
+    axis=2 walks each (x, y) column top to bottom, which is what a vertical
+    well logs. Runs that reach the end of the volume are kept at their
+    truncated length, identically on both sides of any comparison.
+    """
+    a = np.moveaxis(np.asarray(vol, np.int8), axis, -1)
+    pad = np.zeros(a.shape[:-1] + (a.shape[-1] + 2,), np.int8)
+    pad[..., 1:-1] = a
+    d = np.diff(pad, axis=-1)
+    starts = np.argwhere(d == 1)
+    ends = np.argwhere(d == -1)
+    return (ends[:, -1] - starts[:, -1]).astype(np.int64)
+
+
+def gamma_global(sizes):
+    """P(two sand cells drawn anywhere land in the same body).
+
+    sum(n_i^2) / (sum n_i)^2 -- the n^2 deliberately weights toward the
+    largest bodies, because that is the fraction of the sand one well reaches.
+    """
+    s = np.asarray(sizes, float)
+    tot = s.sum()
+    return float((s ** 2).sum() / tot ** 2) if tot > 0 else 0.0
+
+
+def euler_characteristic(vol):
+    """pieces - tunnels + enclosed cavities, for the 6-connected sand phase.
+
+    Computed from the alternating sum of k-cell counts (vertices, edges,
+    faces, cubes) of the cubical complex, which is exact and needs no
+    labelling. Separates rocks that gamma cannot: a body riddled with shale
+    tunnels and a solid one of the same size share a gamma.
+    """
+    v = np.asarray(vol) > 0
+    # k-cell counts of the cubical complex whose 3-cells are the sand voxels
+    c3 = int(v.sum())
+    c2 = (int((v[:-1] | v[1:]).sum()) + int((v[:, :-1] | v[:, 1:]).sum())
+          + int((v[:, :, :-1] | v[:, :, 1:]).sum()))
+    c1 = 0
+    for ax in ((0, 1), (0, 2), (1, 2)):
+        s = v
+        for a in ax:
+            s = np.moveaxis(s, a, 0)
+            s = s[:-1] | s[1:]
+            s = np.moveaxis(s, 0, a)
+        c1 += int(s.sum())
+    s = v
+    for a in (0, 1, 2):
+        s = np.moveaxis(s, a, 0)
+        s = s[:-1] | s[1:]
+        s = np.moveaxis(s, 0, a)
+    c0 = int(s.sum())
+    return int(c0 - c1 + c2 - c3)
+
+
+def entropy_map(vols):
+    """Per-cell Shannon entropy in bits over a stack of repeats.
+
+    p = how often each cell came out sand; H = -p log2 p - (1-p) log2(1-p).
+    A cell that is the same rock every time scores 0, a coin-flip cell 1.
+    H is symmetric in p, so it says how uncertain, never which way: that is
+    what `calibration` is for.
+    """
+    p = np.asarray(vols, np.float64).mean(axis=0)
+    e = np.clip(p, 1e-12, 1.0 - 1e-12)
+    return -(e * np.log2(e) + (1 - e) * np.log2(1 - e))
+
+
+def entropy_map_from_p(p):
+    """Per-cell entropy in bits from an existing probability map."""
+    e = np.clip(np.asarray(p, np.float64), 1e-12, 1.0 - 1e-12)
+    return -(e * np.log2(e) + (1 - e) * np.log2(1 - e))
+
+
+def prob_map(vols):
+    """Per-cell P(sand) over a stack of repeats."""
+    return np.asarray(vols, np.float64).mean(axis=0)
+
+
+def expected_calibration_error(p_model, p_ref, mask=None, bins=10):
+    """Bin cells by the model's stated probability, compare to the truth rate.
+
+    Uses p itself rather than its entropy, which is why it catches a model
+    that inverts every probability: such a model has zero entropy error.
+    """
+    pm = np.asarray(p_model, float).ravel()
+    pr = np.asarray(p_ref, float).ravel()
+    if mask is not None:
+        m = np.asarray(mask).ravel().astype(bool)
+        pm, pr = pm[~m], pr[~m]
+    idx = np.clip((pm * bins).astype(int), 0, bins - 1)
+    ece = 0.0
+    for b in range(bins):
+        sel = idx == b
+        if sel.any():
+            ece += sel.mean() * abs(pm[sel].mean() - pr[sel].mean())
+    return float(ece)
+
+
+def chebyshev_distance_map(shape, xy):
+    """Per-cell max(|x-wx|, |y-wy|), broadcast down the full depth."""
+    nx, ny, nz = shape[:3]
+    ix, iy = np.meshgrid(np.arange(nx), np.arange(ny), indexing='ij')
+    d = np.maximum(np.abs(ix - int(xy[0])), np.abs(iy - int(xy[1])))
+    return np.repeat(d[:, :, None], nz, axis=2)

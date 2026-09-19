@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "resbench"
-version = "0.1.0"
-description = "Geostatistical minimum-acceptance benchmark for generative models of binary reservoir facies (SiliciclasticReservoirs)"
+version = "1.0.0"
+description = "A benchmark for generative AI models of 3D reservoir geology, measured against the ResMill process simulator"
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.24",
@@ -14,6 +14,9 @@ dependencies = [
     "pyarrow>=14",
     "matplotlib>=3.7",
 ]
+
+[project.scripts]
+resbench = "resbench.cli:main"
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
