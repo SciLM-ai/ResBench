@@ -29,10 +29,24 @@ to 0.0058, chord anisotropy 0.0421 to 0.0024 and inside the band. The ranking of
 methods changes too.
 
 **Where this stands.** `tools/gen_field_reference.py` generates the reference for
-all eight environments, CPU only. Remaining: run it at `--n 32`. One correction
-is baked in — ResMill's `ntime` is a global event cap, so it must be scaled by
-the area ratio or the upper channel levels never run (NTG collapses from 0.169
-to 0.041 for shoestring).
+all eight environments, CPU only. Remaining: run it at `--n 32`.
+
+One correction is baked in. ResMill's event budget does not scale with the
+domain: `ntime` for channels, `ntime_per_gen` for delta. Every channel row has
+`ntime_per_level = True`, so `ntime` is a *per-level* budget; each level's sand
+target grows with the field while its budget does not, and every level
+under-fills equally. Scaling by the area ratio fixes it, measured on
+`channel:PV_SHOESTRING` at `512 x 64`:
+
+| | ntime | NTG | sand by depth quartile |
+|---|---|---|---|
+| native `64 x 64` | 30 | 0.1722 | 0.163 0.155 0.163 0.208 |
+| `512 x 64` unscaled | 30 | 0.1163 | 0.089 0.078 0.112 0.187 |
+| `512 x 64` scaled x8 | 240 | **0.1672** | 0.185 0.158 0.172 0.154 |
+
+Delta is the awkward one: it does not honor its NTG target even at native size
+(target 0.231, dataset realized 0.532), so its field reference is checked
+against the realized value rather than the target.
 
 ## Well ensembles: seven environments of eight
 

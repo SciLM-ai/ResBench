@@ -8,14 +8,22 @@ fields, ResMill fails its own test that way (body-size distance 0.0510 against
 a 0.0190 band). See SPEC.md section 7.
 
 Extent per environment:
-  lobe, delta            square,     512 x 512 x 32
-  channel:*              elongated, 1024 x 256 x 32, channels forced along +x
+  lobe, delta            square,    512 x 512 x 32   (64x the training area)
+  channel:*              elongated, 512 x  64 x 32   (8x, all of it along flow)
 
-Channels are elongated along flow because that is the direction a channel belt
-actually extends; a square box would clip every channel at the same length and
-make the long-range statistics meaningless. Cell size is taken from each
+Channels are extended along flow and not sideways because that is how a channel
+belt actually grows; a square box clips every channel at the same length and
+makes the long-range statistics meaningless. Cell size is taken from each
 environment's own ResMill config and never changed (lobe 100 m, the rest 10 m),
 so only the number of cells grows.
+
+ResMill's event budget does NOT scale with the domain, so it has to be scaled
+here or the fields come out starved. For channels `ntime` is per level
+(`ntime_per_level=True` in every channel row): each level's sand target grows
+with the domain while its event budget stays fixed, so every level under-fills
+equally. Measured on PV_SHOESTRING at 512 x 64: NTG 0.1163 unscaled against
+0.1722 native, and 0.1672 once `ntime` is multiplied by the area ratio. Delta
+uses `ntime_per_gen` instead and is scaled the same way.
 
   python tools/gen_field_reference.py --out DIR [--n 32] [--envs lobe,delta]
 """
@@ -59,7 +67,9 @@ ENGINE_IGNORE = {
 }
 
 SQUARE = (512, 512)
-ELONGATED = (1024, 256)          # same cell count, 4:1 along the channel
+ELONGATED = (512, 64)            # extended along flow only
+NATIVE_XY = (64, 64)             # the training extent the budgets were tuned for
+EVENT_CAPS = ('ntime', 'ntime_per_gen')
 MARGIN_XY, SEED_BASE = 8, 2026091800
 
 
@@ -87,11 +97,17 @@ def engine_kwargs(row, env):
     if env == 'lobe':
         kw['poro_ave'], kw['perm_ave'] = row['poro_ave'], row['perm_ave']
     if env.startswith('channel:'):
-        # Point the channels down the long axis, so the field is elongated
-        # along flow rather than clipping every channel at the same length.
-        for k in ('azimuth', 'mCHazi'):
-            if k in kw:
-                kw[k] = 0.0
+        # Point the channels down the long axis. Only the top-level `azimuth`
+        # rotates the model; `mCHazi` is engine-internal and is left alone.
+        if 'azimuth' in kw:
+            kw['azimuth'] = 0.0
+    # Scale the event budget with the domain. Without this the sand target
+    # grows with the field while the budget does not, and the field starves.
+    ex, ey = extent_for(env)
+    ratio = (ex * ey) / (NATIVE_XY[0] * NATIVE_XY[1])
+    for k in EVENT_CAPS:
+        if k in kw and kw[k]:
+            kw[k] = int(round(kw[k] * ratio))
     return kw
 
 

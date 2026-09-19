@@ -28,10 +28,16 @@ channel:SH_DISTAL  channel:SH_PROXIMAL  channel:MEANDER_OXBOW  delta
 | `channel:*` | `512 x 64 x 32` | elongated along flow; `azimuth = 0` |
 
 Cell size is each environment's own and is never changed: only the number of
-cells grows. ResMill's `ntime` is a **global** event cap across all levels, not
-a per-level one, so it is scaled by the area ratio when generating fields —
-without that, level 0 exhausts the budget on its now-larger sand target and the
-upper levels never run at all.
+cells grows.
+
+ResMill's event budget does not scale with the domain, so the generator scales
+it by the area ratio: `ntime` for channels (where `ntime_per_level = True`, so
+it is a per-level budget) and `ntime_per_gen` for delta. Each level's sand
+target grows with the domain while its budget stays fixed, so without scaling
+every level under-fills equally. Measured on `channel:PV_SHOESTRING` at
+`512 x 64`: NTG `0.1163` unscaled against `0.1722` native, and `0.1672` scaled.
+Only the top-level `azimuth` rotates the model; `mCHazi` is engine-internal and
+is left alone.
 
 ## Lags
 
