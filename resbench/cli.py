@@ -66,12 +66,25 @@ def cmd_validate(a):
     return 1 if problems else 0
 
 
-def _score_part(mod, model_dir, ref_dir, ctx):
-    m = mod.merge([mod.summarize(v, ctx) for _, v in io.iter_shards(model_dir)])
-    r = mod.merge([mod.summarize(v, ctx) for _, v in io.iter_shards(ref_dir)])
+def _shard_ctx(ctx, ids, targets, where):
+    """Per-shard ctx. Checks never see ids, so anything that varies per volume
+    has to be resolved here, in the shard's own order, before summarize."""
+    if targets is None:
+        return ctx
+    c = dict(ctx)
+    c['target_ntg'] = io.targets_for(ids, targets, where)
+    return c
+
+
+def _score_part(mod, model_dir, ref_dir, ctx, targets=None):
+    m = mod.merge([mod.summarize(v, _shard_ctx(ctx, i, targets, str(model_dir)))
+                   for i, v in io.iter_shards(model_dir)])
+    r = mod.merge([mod.summarize(v, _shard_ctx(ctx, i, targets, str(ref_dir)))
+                   for i, v in io.iter_shards(ref_dir)])
     d = mod.compare(m, r)
-    _, ref_vols = next(io.iter_shards(ref_dir))
-    b = bands.band_for(mod, ref_vols, ctx)
+    ref_ids, ref_vols = next(io.iter_shards(ref_dir))
+    b = bands.band_for(mod, ref_vols,
+                       _shard_ctx(ctx, ref_ids, targets, str(ref_dir)))
     return score.s_for_check(d['parts'], b), d
 
 
@@ -86,9 +99,10 @@ def cmd_score(a):
             if not (mdir.exists() and rdir.exists()):
                 continue
             ctx = {'azimuth': 0.0}
+            targets = io.load_targets(ref, env)
             for mod in _checks.needing(task, 'samples'):
                 try:
-                    s, _ = _score_part(mod, mdir, rdir, ctx)
+                    s, _ = _score_part(mod, mdir, rdir, ctx, targets)
                 except (io.SubmissionError, StopIteration) as e:
                     print(f'  skipped {task}/{env}/{mod.NAME}: {e}', file=sys.stderr)
                     continue

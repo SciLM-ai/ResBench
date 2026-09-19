@@ -69,7 +69,6 @@ ENGINE_IGNORE = {
 SQUARE = (512, 512)
 ELONGATED = (512, 64)            # extended along flow only
 NATIVE_XY = (64, 64)             # the training extent the budgets were tuned for
-EVENT_CAPS = ('ntime', 'ntime_per_gen')
 MARGIN_XY, SEED_BASE = 8, 2026091800
 
 
@@ -101,11 +100,22 @@ def engine_kwargs(row, env):
         # rotates the model; `mCHazi` is engine-internal and is left alone.
         if 'azimuth' in kw:
             kw['azimuth'] = 0.0
-    # Scale the event budget with the domain. Without this the sand target
-    # grows with the field while the budget does not, and the field starves.
+    # Scale the event budget with the domain, or the field starves: the sand
+    # target grows with the field while the budget does not. The two layer
+    # families need different laws, both measured:
+    #
+    #   channels  budget x AREA. Each event fills a swath, so covering 8x the
+    #             area needs 8x the swaths. PV_SHOESTRING at 512x64: NTG
+    #             0.1163 unscaled vs 0.1722 native, 0.1672 scaled.
+    #   delta     budget x LINEAR extent (sqrt of area). A delta grows outward
+    #             from a point apex and branches, so it needs generations in
+    #             proportion to how far it must build, not to the area it
+    #             covers. At 16x area, 4x events gives NTG 0.5608 against
+    #             0.5416 native; 4x events at 4x area overshoots to 0.6673 and
+    #             1x undershoots to 0.4012.
     ex, ey = extent_for(env)
-    ratio = (ex * ey) / (NATIVE_XY[0] * NATIVE_XY[1])
-    for k in EVENT_CAPS:
+    area = (ex * ey) / (NATIVE_XY[0] * NATIVE_XY[1])
+    for k, ratio in (('ntime', area), ('ntime_per_gen', area ** 0.5)):
         if k in kw and kw[k]:
             kw[k] = int(round(kw[k] * ratio))
     return kw
@@ -151,11 +161,20 @@ def main():
     os.environ.setdefault('MPLBACKEND', 'Agg')
     out = Path(a.out); out.mkdir(parents=True, exist_ok=True)
 
-    tasks = []
-    for gi, env in enumerate(e for e in a.envs.split(',') if e):
-        for k, row in enumerate(pick_rows(env, a.n)):
-            tasks.append((env, row, SEED_BASE + 1000 * ENVS.index(env) + k))
+    # Build per environment, then round-robin, so the memory-heavy 512x512
+    # fields (~4 GB a process, against ~1.7 GB for a 512x64 one) are spread
+    # through the queue instead of all landing in the first wave.
+    per_env = []
+    for env in (e for e in a.envs.split(',') if e):
+        per_env.append([(env, row, SEED_BASE + 1000 * ENVS.index(env) + k)
+                        for k, row in enumerate(pick_rows(env, a.n))])
+    tasks = [t for group in zip(*per_env) for t in group] if per_env else []
+    tasks += [t for g in per_env for t in g[min(map(len, per_env)):]]
     print(f'{len(tasks)} fields over {a.jobs} workers', flush=True)
+
+    want = {}
+    for env, _, _ in tasks:
+        want[env] = want.get(env, 0) + 1
 
     got, t0 = {}, time.time()
     with Pool(a.jobs) as pool:
@@ -164,25 +183,33 @@ def main():
             got.setdefault(env, []).append((seed, f, ntg))
             print(f'  {i}/{len(tasks)} {env:<24} seed {seed} '
                   f'shape {f.shape} ntg {ntg:.4f} {dt:.0f}s', flush=True)
+            # Write each environment as soon as it is complete, so a long run
+            # that is interrupted still leaves finished environments on disk.
+            if len(got[env]) == want[env]:
+                _write_env(out, env, got.pop(env))
 
-    for env, items in got.items():
-        items.sort(key=lambda t: t[0])
-        slug = env.replace(':', '_')
-        d = out / slug; d.mkdir(parents=True, exist_ok=True)
-        vols = np.stack([f for _, f, _ in items])
-        ids = np.array([f'field|{slug}|{s}' for s, _, _ in items], dtype=object)
-        np.savez_compressed(d / 'fields.npz', ids=ids, volumes=vols)
-        grid, ext, (dx, dy) = grid_for(env)
-        (d / 'manifest.json').write_text(json.dumps({
-            'environment': env, 'n': len(items),
-            'extent': [ext[0], ext[1], 32], 'cell_m': [dx, dy, 1.0],
-            'elongated_along_flow': env.startswith('channel:'),
-            'grid': grid, 'seed_base': SEED_BASE,
-            'mean_ntg': float(np.mean([n for _, _, n in items])),
-        }, indent=2))
-        print(f'{env:<24} {len(items)} fields {vols.shape} '
-              f'mean ntg {np.mean([n for _,_,n in items]):.4f}', flush=True)
+    for env, items in list(got.items()):
+        _write_env(out, env, items)
     print(f'done in {time.time()-t0:.0f}s', flush=True)
+
+
+def _write_env(out, env, items):
+    items.sort(key=lambda t: t[0])
+    slug = env.replace(':', '_')
+    d = out / slug; d.mkdir(parents=True, exist_ok=True)
+    vols = np.stack([f for _, f, _ in items])
+    ids = np.array([f'field|{slug}|{s}' for s, _, _ in items], dtype=object)
+    np.savez_compressed(d / 'fields.npz', ids=ids, volumes=vols)
+    grid, ext, (dx, dy) = grid_for(env)
+    (d / 'manifest.json').write_text(json.dumps({
+        'environment': env, 'n': len(items),
+        'extent': [ext[0], ext[1], 32], 'cell_m': [dx, dy, 1.0],
+        'elongated_along_flow': env.startswith('channel:'),
+        'grid': grid, 'seed_base': SEED_BASE,
+        'mean_ntg': float(np.mean([n for _, _, n in items])),
+    }, indent=2))
+    print(f'WROTE {env:<24} {len(items)} fields {vols.shape} '
+          f'mean ntg {np.mean([n for _,_,n in items]):.4f}', flush=True)
 
 
 if __name__ == '__main__':

@@ -136,7 +136,9 @@ def test_merge_equals_whole(name):
 
 def test_identical_ensembles_score_zero():
     v = blobs(8, seed=5)
-    ctx = {'azimuth': 0.0}
+    # net_to_gross scores against the condition, not against a reference, so
+    # it needs a target even when the two ensembles are identical.
+    ctx = {'azimuth': 0.0, 'target_ntg': v.reshape(len(v), -1).mean(1)}
     for m in checks.needing('unconditional', 'samples'):
         s = m.summarize(v, ctx)
         for k, val in m.compare(s, s)['parts'].items():
@@ -165,3 +167,40 @@ def test_split_halves_is_reproducible_and_disjoint():
     assert np.array_equal(a, a2)
     assert not set(a.tolist()) & set(b.tolist())
     assert len(a) == len(b) == 50
+
+
+# ---- net_to_gross must be able to fail -----------------------------------
+# Regression for a bug where summarize() fell back to the volumes' own sand
+# fraction when no target was supplied, so the check compared a model against
+# itself and reported a perfect zero. A submission 30 points wrong scored
+# 0.00 "matched" through the CLI, which never passed a target at all.
+
+def test_net_to_gross_raises_without_a_target():
+    v = blobs(4, seed=11)
+    with pytest.raises(KeyError, match='target_ntg'):
+        checks.CHECKS['net_to_gross'].summarize(v, {'azimuth': 0.0})
+
+
+def test_net_to_gross_rejects_misaligned_targets():
+    v = blobs(4, seed=11)
+    with pytest.raises(ValueError, match='align'):
+        checks.CHECKS['net_to_gross'].summarize(v, {'target_ntg': [0.5, 0.5]})
+
+
+@pytest.mark.parametrize('offset,expected_s', [(0.0, 0.0), (0.02, 2.0), (0.05, 5.0)])
+def test_net_to_gross_scores_a_known_offset(offset, expected_s):
+    m = checks.CHECKS['net_to_gross']
+    v = blobs(8, seed=12)
+    target = v.reshape(len(v), -1).mean(1) - offset      # model is `offset` too sandy
+    d = m.compare(m.summarize(v, {'target_ntg': target}), None)['parts']
+    assert d['ntg_error'] == pytest.approx(offset, abs=1e-9)
+    assert d['ntg_error'] / m.TOLERANCE == pytest.approx(expected_s, abs=1e-6)
+
+
+def test_band_for_uses_declared_parts_not_a_summarize_call():
+    # The fixed-tolerance path must not invoke summarize: it would hand a
+    # 2-volume slice a full-length ctx and trip the alignment check.
+    m = checks.CHECKS['net_to_gross']
+    v = blobs(6, seed=13)
+    ctx = {'target_ntg': v.reshape(len(v), -1).mean(1)}
+    assert bands.band_for(m, v, ctx) == {'ntg_error': m.TOLERANCE}

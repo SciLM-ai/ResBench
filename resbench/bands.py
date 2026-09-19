@@ -29,6 +29,8 @@ def band_for(check, ref_vols, ctx=None, seed=SPLIT_SEED):
     """Split-half distance for one check, per sub-part."""
     fixed = getattr(check, 'TOLERANCE', None)
     if fixed is not None:
+        # Use the declared part names: calling summarize here would hand a
+        # 2-volume slice a full-length ctx and fail the alignment check.
         return {k: float(fixed) for k in _part_names(check, ref_vols, ctx)}
     a, b = split_halves(len(ref_vols), seed)
     sa = check.summarize(np.asarray(ref_vols)[a], ctx)
@@ -58,5 +60,8 @@ def band_for_repeats(check, ref_groups, seed=SPLIT_SEED):
 
 
 def _part_names(check, vols, ctx):
+    declared = getattr(check, 'PARTS', None)
+    if declared is not None:
+        return list(declared)
     s = check.summarize(np.asarray(vols)[:2], ctx)
     return list(check.compare(s, s)['parts'])

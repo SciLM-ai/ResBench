@@ -26,8 +26,14 @@ def panels(nz):
 def plot_one(vol, title, path_stem, cell_m):
     nx, ny, nz = vol.shape
     aspect = ny / nx
-    fig, axes = plt.subplots(3, 1, figsize=(11, max(3.2, 11 * aspect * 3 + 1.4)),
-                             constrained_layout=True)
+    # Elongated fields stack vertically; square ones sit side by side, or a
+    # 512x512 panel three-high would be a metre of paper.
+    if aspect < 0.4:
+        fig, axes = plt.subplots(3, 1, figsize=(11, 11 * aspect * 3 + 1.6),
+                                 constrained_layout=True)
+    else:
+        fig, axes = plt.subplots(1, 3, figsize=(13, 13 / 3 * aspect + 1.4),
+                                 constrained_layout=True)
     for ax, (k, label) in zip(np.atleast_1d(axes), panels(nz)):
         ax.imshow(vol[:, :, k].T, origin='lower', cmap=CMAP, vmin=0, vmax=1,
                   interpolation='nearest', aspect='equal')

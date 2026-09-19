@@ -86,15 +86,42 @@ def read_meta(root):
 
 
 def load_manifest(reference_root, env):
-    """Per-condition metadata for one environment: target sand fraction,
-    azimuth, well location. This is what `ctx` is built from."""
+    """Rows of `reference/manifest.csv` for one environment."""
     p = Path(reference_root) / 'manifest.csv'
     if not p.exists():
         return None
     import csv
-    rows = []
     with open(p, newline='') as fh:
-        for r in csv.DictReader(fh):
-            if r.get('environment') == env:
-                rows.append(r)
-    return rows
+        return [r for r in csv.DictReader(fh) if r.get('environment') == env]
+
+
+def load_targets(reference_root, env):
+    """{volume id -> conditioned sand fraction} for one environment.
+
+    The target is the reference volume's REALIZED sand fraction, the `ntg`
+    column, because that is the number handed to the model as a condition.
+    ResMill's own input is preserved separately as `requested_ntg` and is NOT
+    what the model sees; the two differ by about 0.02 on average, which is
+    larger than any model's error, so using the wrong one would measure the
+    engine's targeting error instead of the model's.
+    """
+    rows = load_manifest(reference_root, env)
+    if rows is None:
+        return None
+    out = {}
+    for r in rows:
+        vid, ntg = r.get('id'), r.get('ntg')
+        if vid is not None and ntg not in (None, ''):
+            out[str(vid)] = float(ntg)
+    return out
+
+
+def targets_for(ids, table, where):
+    """Line a shard's ids up with their targets, in the shard's own order."""
+    missing = [str(i) for i in ids if str(i) not in table]
+    if missing:
+        raise SubmissionError(
+            f'{where}: no conditioned sand fraction for {len(missing)} ids '
+            f'(first: {missing[:3]}). The submission and the reference must '
+            f'key into the same manifest.')
+    return np.array([table[str(i)] for i in ids], dtype=np.float64)
