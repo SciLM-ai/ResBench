@@ -183,17 +183,19 @@ def main():
             got.setdefault(env, []).append((seed, f, ntg))
             print(f'  {i}/{len(tasks)} {env:<24} seed {seed} '
                   f'shape {f.shape} ntg {ntg:.4f} {dt:.0f}s', flush=True)
-            # Write each environment as soon as it is complete, so a long run
-            # that is interrupted still leaves finished environments on disk.
+            # Checkpoint after every field, not only when an environment is
+            # complete. A 12-hour limit once killed a run at 123/128 and threw
+            # away 15 finished delta fields because the 16th never arrived.
+            _write_env(out, env, got[env], partial=len(got[env]) < want[env])
             if len(got[env]) == want[env]:
-                _write_env(out, env, got.pop(env))
+                got.pop(env)
 
     for env, items in list(got.items()):
-        _write_env(out, env, items)
+        _write_env(out, env, items, partial=len(items) < want.get(env, 0))
     print(f'done in {time.time()-t0:.0f}s', flush=True)
 
 
-def _write_env(out, env, items):
+def _write_env(out, env, items, partial=False):
     items.sort(key=lambda t: t[0])
     slug = env.replace(':', '_')
     d = out / slug; d.mkdir(parents=True, exist_ok=True)
