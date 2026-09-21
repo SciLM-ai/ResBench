@@ -171,3 +171,18 @@ def test_score_refuses_a_reference_without_a_manifest(tmp_path, small_fields):
     _write_stack(sub / 'unconditional' / SLUG / 'samples' / 's.npz', vols, 'vol')
     with pytest.raises(SystemExit, match='manifest'):
         cli.main(['score', str(sub), '--reference', str(ref)])
+
+
+def test_figures_command_writes_pdfs(tmp_path, small_fields):
+    vols = smooth_noise(24, seed=10)
+    reps = {c: smooth_noise(io.K_REPEATS, seed=20 + i) for i, c in enumerate(io.CONDITIONS['unconditional'])}
+    pat = np.array([1] * 16 + [0] * 16, np.int8)
+    wells = {c: (pin_column(smooth_noise(io.K_REPEATS, seed=40 + i), (20 + i, 20), pat), (20 + i, 20), pat)
+             for i, c in enumerate(io.CONDITIONS['well_conditioned'])}
+    ref, sub = tmp_path / 'ref', tmp_path / 'sub'
+    _build_reference(ref, vols, reps, wells); _build_submission(sub, vols, reps, wells)
+    out = tmp_path / 'r.json'
+    assert cli.main(['score', str(sub), '--reference', str(ref), '--out', str(out), '--envs', ENV]) == 0
+    assert cli.main(['figures', str(out), '--out', str(tmp_path / 'figs')]) == 0
+    pdfs = sorted(p.name for p in (tmp_path / 'figs').glob('*.pdf'))
+    assert pdfs == ['scores_field_scale.pdf', 'scores_overview.pdf', 'scores_unconditional.pdf', 'scores_well_conditioned.pdf']

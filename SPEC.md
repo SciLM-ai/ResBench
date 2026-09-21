@@ -65,10 +65,36 @@ at the same extent as the comparison.
 | constant | value | what it fixes |
 |---|---|---|
 | dataset split seed | 42 | train / validation / test |
-| index seed | published in `manifest.csv` | which 512 test volumes are the reference |
+| `MANIFEST_SEED` | 20260726 | which 512 test volumes are the reference, and their noise seeds (frozen protocol, EVAL.md 6) |
+| `WELL_XY_SEED` | 20260919 | `(well_x, well_y)` per reference row |
+| repeats `SEED_BASE` | 20260921 | ResMill seeds for `cond<i>`, via `default_rng([SEED_BASE, env_index, i])` |
 | `SPLIT_SEED` | 20260918 | the half/half partition used for every band |
 | noise seed | one per manifest row | your model's starting noise |
 | field `SEED_BASE` | 2026091800 | ResMill seeds for the field reference |
+
+## Reference layout and manifest
+
+```
+REF/manifest.csv
+REF/volumes/<slug>/volumes.npz          ids, volumes            512 per environment
+REF/repeats/<slug>/cond<i>.npz          ids, volumes, seeds      i = 0..4, 256 ResMill runs of reference row i
+REF/repeats/<slug>/well<i>.npz          ids, volumes, pattern, well_mask, well_xy, source_id   i = 1..5
+REF/fields/<slug>/fields.npz            ids, volumes            32 per environment
+```
+
+`manifest.csv` has one row per reference item and a `task` column:
+
+| task | id | what the row records |
+|---|---|---|
+| `unconditional` | `<env>\|<shard_dir>\|<sample_idx>` | `ntg` (realized), `requested_ntg`, `azimuth`, slim parameters, `noise_seed`, `well_x`, `well_y` |
+| `repeats_unconditional` | `<env>\|cond<i>` | the same, copied from reference row i; `source_id` names that row |
+| `repeats_well` | `<env>\|well<i>` | `source_id` = the parameter row the ensemble was drawn from, `well_x`, `well_y`, `pattern` |
+| `field_scale` | `field\|<slug>\|<seed>` | `ntg` = the FIELD's realized sand fraction, `ntg_source_cube`, `requested_ntg`, `azimuth` |
+
+`ntg` is always the number the model is conditioned on for that item. The well
+location for the `well_conditioned` samples task is one interior column per
+reference row, `(well_x, well_y)` drawn from `default_rng(20260919)` uniformly
+in `[8, 56]`; the submitter reads the borehole from the reference volume there.
 
 ## Per-check constants
 
@@ -81,7 +107,7 @@ at the same extent as the comparison.
 | `body_size` | log10 histogram, 0 to 8 dex, 800 bins |
 | `chord_lengths` | linear sampling, threshold 0.5, censored chords dropped, log10 histogram 0 to 4 dex, 400 bins |
 | `speckle` | bodies `< 8` cells |
-| `variety`, `well_blending`, `calibration` | `K = 128` model runs per condition |
+| `variety`, `well_blending`, `calibration` | `K = 128` model runs per condition, 5 conditions per environment per task; reference 256 runs (`cond`) or up to 256 exact matches (`well`); band = split-half of the reference at the same condition |
 | `well_blending` | profile to Chebyshev distance 20; signed offset over distance `<= 6` |
 | `calibration` | 10 equal-width probability bins, well cells excluded |
 

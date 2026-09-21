@@ -39,15 +39,18 @@ A submission covers all eight or it does not get a rank.
 
 Your model is compared against three references:
 
-- **512 reference volumes per environment.** Test-split volumes; a published index seed
-  picks which, and the ids are listed in `reference/manifest.csv`. Each carries the
-  parameters describing it — **its realized sand fraction**, body width and depth,
-  sinuosity, azimuth — and your model receives exactly those plus a published noise seed.
-- **40 well ensembles.** A well is one vertical borehole: the 32 cells under a map
-  location. ResMill was run repeatedly and every volume whose column matched the target
-  pattern *exactly* was kept, up to 256. Five wells per environment, each with >= 2
-  separate sand intervals, a sand fraction within 0.15 of the environment's, and >= 50
-  exact matches.
+- **512 reference volumes per environment.** Test-split volumes, selected with the
+  published index seed; `manifest.csv` lists each one's id, its parameters — **its
+  realized sand fraction**, body width and depth, sinuosity, azimuth — a noise seed, and
+  the map location `(well_x, well_y)` of the borehole used in the well-conditioned task.
+- **5 repeat conditions per environment**, `cond0`–`cond4`: the parameters of reference
+  rows 0–4, each with 256 ResMill runs, for the checks that need many runs of one input.
+- **5 wells per environment**, `well1`–`well5`. A well is one vertical borehole: the 32
+  cells under a map location. ResMill was run repeatedly from one parameter row and every
+  volume whose column matched the pattern *exactly* was kept, up to 256. Each well has
+  >= 2 separate sand intervals, a sand fraction within 0.15 of the environment's, and
+  >= 50 exact matches. `manifest.csv` names the parameter row (`source_id`), the
+  location and the pattern.
 - **32 large fields per environment**, each a single ResMill run. See §3.
 
 ---
@@ -159,18 +162,35 @@ ResBench v1 · 8 environments · sampler heun-100 · NFE 100
 ```
 my_submission/
 ├── submission.yaml                    # model, params, sampler, NFE, training set
-├── unconditional/<environment>/
-│   ├── samples/                       # 512 volumes, one per reference volume
-│   └── repeats/                       # 4 inputs x 128 runs
-├── well_conditioned/<environment>/
-│   ├── samples/                       # 512 volumes, wells from the reference
-│   └── repeats/                       # 4 published wells x 128 runs
-└── field_scale/<environment>/
-    └── fields/                        # 10 fields at the §3 extent
+├── unconditional/<slug>/
+│   ├── samples/*.npz                  # 512 volumes, one per reference volume, same ids
+│   └── repeats/cond0.npz … cond4.npz  # 128 runs each of the condition's parameters
+├── well_conditioned/<slug>/
+│   ├── samples/*.npz                  # 512 volumes, same ids, borehole read from the reference
+│   └── repeats/well1.npz … well5.npz  # 128 runs each, honoring the published well
+└── field_scale/<slug>/
+    └── fields/*.npz                   # 32 fields at the §3 extent, ids from the manifest
 ```
 
-`.npz` files holding `ids` and `volumes`; the ids line your output up with the reference.
-2,048 native volumes per environment, 16,384 across the benchmark, plus 80 fields.
+`<slug>` is the environment with `:` replaced by `_`. Every `.npz` holds `ids` and
+`volumes` (int8, 1 = sand). Ids are what line your output up with the reference:
+
+| part | id | where the condition comes from |
+|---|---|---|
+| `samples` | the reference volume's id, e.g. `lobe\|lobe/shard_0002\|192` | that manifest row: parameters, and for the well task the borehole at `(well_x, well_y)` of the reference volume |
+| `repeats/cond<i>.npz` | `cond<i>\|<k>`, k = 0…127 | manifest row `<env>\|cond<i>` (task `repeats_unconditional`) |
+| `repeats/well<i>.npz` | `well<i>\|<k>`, k = 0…127 | manifest row `<env>\|well<i>` (task `repeats_well`): its `source_id` parameters plus the pattern at `(well_x, well_y)` |
+| `fields` | `field\|<slug>\|<seed>` from the manifest | manifest row of that field: its realized sand fraction is the condition |
+
+Well cells in a well-conditioned volume must equal the pattern exactly; the harness treats
+them as given and excludes them from `calibration`.
+
+```bash
+resbench validate ./my_submission --envs lobe              # one environment while you develop
+resbench score ./my_submission --reference REF --envs lobe
+resbench score ./my_submission --reference REF --target-column ntg_source_cube
+#   ^ only for a submission generated BEFORE the manifest existed; see SPEC.md
+```
 
 **Fixed for everyone:** the dataset and splits, the 512 reference volumes and their seed,
 the parameters handed to your model, the 40 wells, the twelve checks, the bands, the field
@@ -202,8 +222,13 @@ resbench/
 │   ├── bands.py           split-half bands
 │   ├── score.py           normalizing, averaging, verdicts
 │   └── cli.py             download · validate · score · figures
-├── reference/             the three references of §1
-├── tools/                 reference generation and figures
+├── reference/
+│   ├── manifest.csv       one row per reference item; `task` says which kind
+│   ├── volumes/<slug>/    512 test volumes per environment
+│   ├── repeats/<slug>/    cond0–4 (256 ResMill runs each), well1–5 (up to 256 exact matches each)
+│   └── fields/<slug>/     32 ResMill fields at the §3 extent
+├── tools/                 build_*_reference.py, gen_*_reference.py, relabel_submission.py
+├── example/               make_example.py writes a valid one-environment submission
 └── tests/
 ```
 

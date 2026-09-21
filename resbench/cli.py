@@ -184,7 +184,8 @@ def cmd_score(a):
 
 def cmd_figures(a):
     from . import figures as _f
-    print(f'figures for {a.results} -> {a.out} (PDF)')
+    for p in _f.make(a.results, a.out):
+        print(f'wrote {p}')
     return 0
 
 
