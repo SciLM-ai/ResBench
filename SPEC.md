@@ -31,13 +31,28 @@ Cell size is each environment's own and is never changed: only the number of
 cells grows.
 
 ResMill's event budget does not scale with the domain, so the generator scales
-it by the area ratio: `ntime` for channels (where `ntime_per_level = True`, so
-it is a per-level budget) and `ntime_per_gen` for delta. Each level's sand
-target grows with the domain while its budget stays fixed, so without scaling
-every level under-fills equally. Measured on `channel:PV_SHOESTRING` at
-`512 x 64`: NTG `0.1163` unscaled against `0.1722` native, and `0.1672` scaled.
-Only the top-level `azimuth` rotates the model; `mCHazi` is engine-internal and
-is left alone.
+it, and the two layer families need different laws, both measured:
+
+- **channels**: `ntime` (per level, since every channel row sets
+  `ntime_per_level = True`) scales with the **area** ratio. Each event fills a
+  swath, so 8x the area needs 8x the swaths. `channel:PV_SHOESTRING` at
+  `512 x 64`: NTG `0.1163` unscaled, `0.1722` native, `0.1672` scaled.
+- **delta**: `ntime_per_gen` scales with the **linear** ratio, the square root
+  of area. A delta grows outward from a point apex and branches, so it needs
+  generations in proportion to how far it must build, not the area it covers.
+  At 16x area, 4x events gives NTG `0.5608` against `0.5416` native; 4x events
+  at 4x area overshoots to `0.6673` and 1x undershoots to `0.4012`.
+
+Both are safety nets rather than stopping rules: the per-level loop stops on
+its sand target, and a generous budget costs nothing. Only the top-level
+`azimuth` rotates the model; `mCHazi` is engine-internal and is left alone.
+
+Two ResMill defects surfaced by large domains were fixed in ResMill `fa75137`:
+channel walks were clipped in the unrotated frame and then rotated, so the
+occupied region was a rotated copy of the grid (net-to-gross depended on
+azimuth, `0.534` at 45 deg vs `0.564` at 0 and 90); and the streamline safety
+net `ndis0` was sized from the mean of the two horizontal spans, far too short
+for an elongated grid. The published 64-cube dataset predates both fixes.
 
 ## Lags
 

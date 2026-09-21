@@ -95,7 +95,7 @@ def load_manifest(reference_root, env):
         return [r for r in csv.DictReader(fh) if r.get('environment') == env]
 
 
-def load_targets(reference_root, env):
+def load_targets(reference_root, env, column='ntg'):
     """{volume id -> conditioned sand fraction} for one environment.
 
     The target is the reference volume's REALIZED sand fraction, the `ntg`
@@ -104,13 +104,19 @@ def load_targets(reference_root, env):
     what the model sees; the two differ by about 0.02 on average, which is
     larger than any model's error, so using the wrong one would measure the
     engine's targeting error instead of the model's.
+
+    `column` exists for one reason: a submission generated BEFORE the manifest
+    was published could only have been conditioned on `ntg_source_cube`, and
+    scoring it against `ntg` would charge the model for the engine's own
+    cube-to-field gap. Score such a submission with column='ntg_source_cube'
+    and say so; regenerate against the manifest when a GPU is free.
     """
     rows = load_manifest(reference_root, env)
     if rows is None:
         return None
     out = {}
     for r in rows:
-        vid, ntg = r.get('id'), r.get('ntg')
+        vid, ntg = r.get('id'), r.get(column)
         if vid is not None and ntg not in (None, ''):
             out[str(vid)] = float(ntg)
     return out

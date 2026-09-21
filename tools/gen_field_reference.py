@@ -209,8 +209,9 @@ def _write_env(out, env, items, partial=False):
         'elongated_along_flow': env.startswith('channel:'),
         'grid': grid, 'seed_base': SEED_BASE,
         'mean_ntg': float(np.mean([n for _, _, n in items])),
+        'complete': not partial,
     }, indent=2))
-    print(f'WROTE {env:<24} {len(items)} fields {vols.shape} '
+    print(f'{"saved" if partial else "WROTE"} {env:<24} {len(items)} fields {vols.shape} '
           f'mean ntg {np.mean([n for _,_,n in items]):.4f}', flush=True)
 
 

@@ -99,7 +99,7 @@ def cmd_score(a):
             if not (mdir.exists() and rdir.exists()):
                 continue
             ctx = {'azimuth': 0.0}
-            targets = io.load_targets(ref, env)
+            targets = io.load_targets(ref, env, column=a.target_column)
             for mod in _checks.needing(task, 'samples'):
                 try:
                     s, _ = _score_part(mod, mdir, rdir, ctx, targets)
@@ -135,6 +135,10 @@ def main(argv=None):
     p = sub.add_parser('validate'); p.add_argument('submission'); p.set_defaults(fn=cmd_validate)
     p = sub.add_parser('score'); p.add_argument('submission')
     p.add_argument('--reference'); p.add_argument('--out')
+    p.add_argument('--target-column', default='ntg',
+                   help="manifest column net_to_gross scores against; 'ntg' (the field's "
+                        "realized value, the published condition) unless the submission "
+                        "predates the manifest and was conditioned on 'ntg_source_cube'")
     p.set_defaults(fn=cmd_score)
     p = sub.add_parser('figures'); p.add_argument('results')
     p.add_argument('--out', default='figures'); p.set_defaults(fn=cmd_figures)
