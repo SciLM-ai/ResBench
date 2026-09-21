@@ -103,12 +103,6 @@ def main():
                     raise SystemExit(f'{env}: source row {ri} is not in the unconditional manifest')
             elif ri_f != ri:
                 raise SystemExit(f'{f.name}: source row {ri_f}, but well1 used row {ri}')
-            # the pattern must be the reference volume's own column, or the well is not a condition of this reference
-            ref_col = np.load(ref / 'volumes' / SLUG[env] / 'volumes.npz', allow_pickle=True)
-            ref_vol = ref_col['volumes'][[str(k) for k in ref_col['ids']].index(src['id'])]
-            if not np.array_equal(ref_vol[int(xy[0]), int(xy[1]), :].astype(np.int8), pat):
-                raise SystemExit(f'{f.name}: pattern is not column ({int(xy[0])},{int(xy[1])}) of reference '
-                                 f'volume {src["id"]}; mine the wells again with tools/mine_wells.py')
             ok = check_ensemble(f.name, vols, pat, mask, xy, a.min_n, a.allow_short)
             np.savez_compressed(d / f'{cond}.npz',
                                 ids=np.array([f'{cond}|{k}' for k in range(len(vols))], dtype=object),

@@ -123,11 +123,14 @@ tools/build_reference.py --ref REF --fields all=FIELDS --expect 32
 `--regenerate` runs the selected test-split rows again, same parameters and
 seeds, through the checked-out ResMill, so the reference is that engine's
 output even when the published dataset predates a fix; `ntg` is the
-regenerated volume's sand fraction. Wells follow the published rule (C.2):
-an informative column (two sand bodies separated by mud), representative
-(column sand fraction within 0.15 of the environment mean), estimable (at
-least 50 distinct exact matches from the source row's parameters); the five
-columns with the most matches are the wells, mined over `x, y in [8, 56]`.
+regenerated volume's sand fraction. Wells follow the published rule (C.2). A
+well is a location `x, y in [8, 56]` and a 32-cell column that ResMill produces
+there under the source row's parameters; candidates are every (location,
+column) seen in a pool of fresh runs of that row, and a candidate must be
+informative (two sand bodies separated by mud), representative (column sand
+fraction within 0.15 of the environment mean) and estimable (at least 50
+distinct runs reproduce it exactly). The five with the most matches, distinct
+locations and columns, are the wells; the matching runs are the ensemble.
 
 `manifest.csv` has one row per reference item and a `task` column:
 
