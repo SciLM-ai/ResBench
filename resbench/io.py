@@ -26,6 +26,16 @@ FIELD_EXTENT = {e: ((512, 512, 32) if e in ('lobe', 'delta') else (512, 64, 32))
                 for e in ENVIRONMENTS}
 NATIVE_SHAPE = (64, 64, 32)
 
+# Repeats: many runs of ONE fixed input, for variety / calibration /
+# well_blending. Five conditions per environment in each task. A submission
+# holds `<task>/<slug>/repeats/<condition>.npz` with K_REPEATS volumes and
+# ids `<condition>|<k>`; the reference holds `ref/repeats/<slug>/<condition>.npz`
+# with at least as many ResMill runs, and for wells also `pattern`,
+# `well_mask` and `well_xy`. The manifest maps each condition to its inputs.
+CONDITIONS = {'unconditional': tuple(f'cond{i}' for i in range(5)),
+              'well_conditioned': tuple(f'well{i}' for i in range(1, 6))}
+K_REPEATS = 128
+
 
 class SubmissionError(Exception):
     """Something about the submission is wrong, with a message saying what."""
@@ -131,3 +141,42 @@ def targets_for(ids, table, where):
             f'(first: {missing[:3]}). The submission and the reference must '
             f'key into the same manifest.')
     return np.array([table[str(i)] for i in ids], dtype=np.float64)
+
+
+def load_repeats(directory, task, where=''):
+    """{condition: (ids, volumes, extras)} for one task's repeats directory.
+
+    `extras` carries `pattern`, `well_mask`, `well_xy` when present (the
+    reference side of well conditions). Missing conditions are reported by
+    name so a submitter sees exactly which file to add.
+    """
+    d = Path(directory)
+    if not d.exists():
+        raise SubmissionError(f'{where or d}: no repeats directory')
+    out, missing = {}, []
+    for cond in CONDITIONS[task]:
+        f = d / f'{cond}.npz'
+        if not f.exists():
+            missing.append(cond); continue
+        z = np.load(f, allow_pickle=True)
+        if 'volumes' not in z:
+            raise SubmissionError(f'{f}: no "volumes" array')
+        vols = np.asarray(z['volumes'])
+        ids = np.asarray(z['ids'], dtype=object) if 'ids' in z else \
+            np.array([f'{cond}|{k}' for k in range(len(vols))], dtype=object)
+        extras = {k: np.asarray(z[k]) for k in ('pattern', 'well_mask', 'well_xy') if k in z}
+        out[cond] = (ids, vols, extras)
+    if missing:
+        raise SubmissionError(f'{where or d}: missing repeats {missing}; '
+                              f'expected one .npz per condition in {CONDITIONS[task]}')
+    return out
+
+
+def repeats_ctx(cond, extras):
+    """The ctx a repeats-based check needs for one condition."""
+    c = {'condition_id': cond}
+    if 'well_xy' in extras:
+        c['well_xy'] = tuple(int(v) for v in np.asarray(extras['well_xy']).ravel()[:2])
+    if 'well_mask' in extras:
+        c['well_mask'] = np.asarray(extras['well_mask'])
+    return c

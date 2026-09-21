@@ -118,12 +118,9 @@ def main():
         print(f"{slug:<26} {len(r):>3} fields  {'complete' if complete else 'PARTIAL '}"
               f"  mean ntg {np.mean([x['ntg'] for x in r]):.4f}  "
               f"(source cube {np.mean([x['ntg_source_cube'] for x in r]):.4f})")
-    out.mkdir(parents=True, exist_ok=True)
-    with open(out / 'manifest.csv', 'w', newline='') as fh:
-        w = csv.DictWriter(fh, fieldnames=['environment', 'id', 'ntg', 'ntg_source_cube',
-                                           'requested_ntg', 'azimuth'])
-        w.writeheader(); w.writerows(rows)
-    print(f'wrote {out / "manifest.csv"}: {len(rows)} rows, {len(sources)} environments')
+    from tools._manifest import upsert
+    n_new, n_kept = upsert(out, 'field_scale', rows)
+    print(f'manifest.csv: {n_new} field_scale rows written, {n_kept} rows of other tasks kept')
 
 
 if __name__ == '__main__':

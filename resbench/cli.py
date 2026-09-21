@@ -35,12 +35,22 @@ def cmd_download(a):
     return 1
 
 
+def _envs(a):
+    if not getattr(a, 'envs', None):
+        return list(io.ENVIRONMENTS)
+    chosen = [e.strip() for e in a.envs.split(',') if e.strip()]
+    bad = [e for e in chosen if e not in io.ENVIRONMENTS]
+    if bad:
+        raise SystemExit(f'unknown environment(s) {bad}; choose from {list(io.ENVIRONMENTS)}')
+    return [e for e in io.ENVIRONMENTS if e in chosen]
+
+
 def cmd_validate(a):
     root = Path(a.submission)
     meta = io.read_meta(root)
     problems, found = [], 0
     for task in io.TASKS:
-        for env in io.ENVIRONMENTS:
+        for env in _envs(a):
             shape = io.NATIVE_SHAPE if task != 'field_scale' else io.FIELD_EXTENT[env]
             kinds = ['fields'] if task == 'field_scale' else ['samples', 'repeats']
             for kind in kinds:
@@ -49,9 +59,17 @@ def cmd_validate(a):
                     problems.append(f'missing: {d.relative_to(root)}')
                     continue
                 try:
-                    ids, vols = next(io.iter_shards(d))
-                    io.check_shape(vols, shape, str(d.relative_to(root)))
-                    io.check_binary(vols, str(d.relative_to(root)))
+                    if kind == 'repeats':
+                        for cond, (ids, vols, _) in io.load_repeats(d, task, str(d.relative_to(root))).items():
+                            w = f'{d.relative_to(root)}/{cond}'
+                            io.check_shape(vols, shape, w)
+                            io.check_binary(vols, w)
+                            if len(vols) < io.K_REPEATS:
+                                raise io.SubmissionError(f'{w}: {len(vols)} runs, need {io.K_REPEATS}')
+                    else:
+                        ids, vols = next(io.iter_shards(d))
+                        io.check_shape(vols, shape, str(d.relative_to(root)))
+                        io.check_binary(vols, str(d.relative_to(root)))
                     found += 1
                 except io.SubmissionError as e:
                     problems.append(str(e))
@@ -88,11 +106,39 @@ def _score_part(mod, model_dir, ref_dir, ctx, targets=None):
     return score.s_for_check(d['parts'], b), d
 
 
+def _score_repeats(mod, model_dir, ref_dir, task, where):
+    """Score one repeats-based check: per condition, many runs of one input.
+
+    The band is ResMill's own ensemble split in half at the same condition,
+    so `s = 1` means the model's spread is as far from ResMill's as two halves
+    of ResMill are from each other.
+    """
+    model = io.load_repeats(model_dir, task, where=f'{where} (submission)')
+    ref = io.load_repeats(ref_dir, task, where=f'{where} (reference)')
+    m_parts, r_parts, groups = [], [], {}
+    for cond in io.CONDITIONS[task]:
+        _, mv, _ = model[cond]
+        _, rv, extras = ref[cond]
+        if len(mv) < io.K_REPEATS:
+            raise io.SubmissionError(f'{where}/{cond}: {len(mv)} runs, need {io.K_REPEATS}')
+        ctx = io.repeats_ctx(cond, extras)      # the reference defines the well
+        m_parts.append(mod.summarize(mv, ctx))
+        r_parts.append(mod.summarize(rv, ctx))
+        groups[cond] = (rv, ctx)
+    d = mod.compare(mod.merge(m_parts), mod.merge(r_parts))
+    b = bands.band_for_repeats(mod, groups)
+    return score.s_for_check(d['parts'], b), d
+
+
 def cmd_score(a):
     root, ref = Path(a.submission), _reference_root(a.reference)
+    if not (ref / 'manifest.csv').exists():
+        raise SystemExit(f'{ref}: no manifest.csv. net_to_gross scores each volume against '
+                         f'the sand fraction it was conditioned on, which only the manifest '
+                         f'records; build the reference with tools/build_*_reference.py.')
     rows = []
     for task in io.TASKS:
-        for env in io.ENVIRONMENTS:
+        for env in _envs(a):
             kind = 'fields' if task == 'field_scale' else 'samples'
             mdir = io.part_dir(root, task, env, kind)
             rdir = ref / ('fields' if task == 'field_scale' else 'volumes') / io.SLUG[env]
@@ -108,6 +154,20 @@ def cmd_score(a):
                     continue
                 rows.append({'task': task, 'environment': env,
                              'check': mod.NAME, 's': s})
+            # Repeats-based checks: many runs of one input. Field scale has
+            # none (spec section 4), so this loop is empty there.
+            reps = _checks.needing(task, 'repeats')
+            if reps:
+                m_rep = io.part_dir(root, task, env, 'repeats')
+                r_rep = ref / 'repeats' / io.SLUG[env]
+                for mod in reps:
+                    try:
+                        s, _ = _score_repeats(mod, m_rep, r_rep, task, f'{task}/{env}')
+                    except io.SubmissionError as e:
+                        print(f'  skipped {task}/{env}/{mod.NAME}: {e}', file=sys.stderr)
+                        continue
+                    rows.append({'task': task, 'environment': env,
+                                 'check': mod.NAME, 's': s})
     if not rows:
         raise SystemExit('Nothing scored. Check --reference and the submission layout.')
     tree = score.aggregate(rows)
@@ -132,9 +192,12 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog='resbench')
     sub = ap.add_subparsers(dest='cmd', required=True)
     p = sub.add_parser('download'); p.set_defaults(fn=cmd_download)
-    p = sub.add_parser('validate'); p.add_argument('submission'); p.set_defaults(fn=cmd_validate)
+    envs_help = 'comma-separated subset of environments (default: all eight; a ranked submission needs all eight)'
+    p = sub.add_parser('validate'); p.add_argument('submission')
+    p.add_argument('--envs', help=envs_help); p.set_defaults(fn=cmd_validate)
     p = sub.add_parser('score'); p.add_argument('submission')
     p.add_argument('--reference'); p.add_argument('--out')
+    p.add_argument('--envs', help=envs_help)
     p.add_argument('--target-column', default='ntg',
                    help="manifest column net_to_gross scores against; 'ntg' (the field's "
                         "realized value, the published condition) unless the submission "
