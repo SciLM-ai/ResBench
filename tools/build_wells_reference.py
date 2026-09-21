@@ -16,7 +16,7 @@ Nothing is trusted from file names. For every ensemble the script requires:
   * every batch manifest of the environment's draw pool names the SAME
     source row, which must exist in the unconditional manifest.
 
-    python tools/build_wells_reference.py --ref REF [--envs a,b] [--lobe-dir DIR]
+    python tools/build_wells_reference.py --ref REF [--envs a,b] [--wells-dir DIR]
 """
 import argparse, glob, hashlib, json, sys
 from pathlib import Path
@@ -72,8 +72,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--ref', required=True)
     ap.add_argument('--envs', default=','.join(ENVIRONMENTS))
-    ap.add_argument('--lobe-dir', default=None,
-                    help='directory of rebuilt lobe wells (lobe_w<i>.npz) to use instead of the published ones')
+    ap.add_argument('--wells-dir', default=None,
+                    help='directory of mined wells (<slug>_well<i>.npz from tools/mine_wells.py); an '
+                         'environment whose files are there is read from it, the rest from the published wells')
     ap.add_argument('--min-n', type=int, default=MIN_N)
     ap.add_argument('--allow-short', action='store_true')
     a = ap.parse_args()
@@ -86,18 +87,28 @@ def main():
     rows, kept = [], [r for r in read(ref) if r['task'] == 'repeats_well']
     kept_envs = {r['environment'] for r in kept}
     for env in (e for e in a.envs.split(',') if e):
-        ri = source_row_index(env)
-        src = uncond.get((env, ri))
-        if src is None:
-            raise SystemExit(f'{env}: source row {ri} is not in the unconditional manifest')
+        mined = a.wells_dir and (Path(a.wells_dir) / f'{SLUG[env]}_well1.npz').exists()
+        ri = None
         d = ref / 'repeats' / SLUG[env]; d.mkdir(parents=True, exist_ok=True)
         for i, cond in enumerate(CONDITIONS['well_conditioned'], start=1):
-            if env == 'lobe' and a.lobe_dir:
-                f = Path(a.lobe_dir) / f'lobe_w{i}.npz'
-            else:
-                f = PUBLISHED / f'{SLUG[env]}_well{i}.npz'
+            f = (Path(a.wells_dir) / f'{SLUG[env]}_well{i}.npz') if mined else PUBLISHED / f'{SLUG[env]}_well{i}.npz'
             z = np.load(f)
             vols, pat, mask, xy = z['volumes'].astype(np.int8), z['pattern'].astype(np.int8), z['well_mask'], z['well_xy']
+            # the source row: recorded in a mined file, or the one row every batch of the published pool used
+            ri_f = int(z['cond_row_index']) if 'cond_row_index' in z.files else source_row_index(env)
+            if ri is None:
+                ri = ri_f
+                src = uncond.get((env, ri))
+                if src is None:
+                    raise SystemExit(f'{env}: source row {ri} is not in the unconditional manifest')
+            elif ri_f != ri:
+                raise SystemExit(f'{f.name}: source row {ri_f}, but well1 used row {ri}')
+            # the pattern must be the reference volume's own column, or the well is not a condition of this reference
+            ref_col = np.load(ref / 'volumes' / SLUG[env] / 'volumes.npz', allow_pickle=True)
+            ref_vol = ref_col['volumes'][[str(k) for k in ref_col['ids']].index(src['id'])]
+            if not np.array_equal(ref_vol[int(xy[0]), int(xy[1]), :].astype(np.int8), pat):
+                raise SystemExit(f'{f.name}: pattern is not column ({int(xy[0])},{int(xy[1])}) of reference '
+                                 f'volume {src["id"]}; mine the wells again with tools/mine_wells.py')
             ok = check_ensemble(f.name, vols, pat, mask, xy, a.min_n, a.allow_short)
             np.savez_compressed(d / f'{cond}.npz',
                                 ids=np.array([f'{cond}|{k}' for k in range(len(vols))], dtype=object),

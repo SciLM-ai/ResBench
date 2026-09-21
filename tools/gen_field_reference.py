@@ -67,7 +67,8 @@ ENGINE_IGNORE = {
 }
 
 SQUARE = (512, 512)
-ELONGATED = (512, 64)            # extended along flow only
+ELONGATED = (512, 128)           # extended along flow only; 128 wide so sinuous
+                                 # channels do not end on a side wall
 NATIVE_XY = (64, 64)             # the training extent the budgets were tuned for
 MARGIN_XY, SEED_BASE = 8, 2026091800
 

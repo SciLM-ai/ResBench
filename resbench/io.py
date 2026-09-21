@@ -22,7 +22,7 @@ TASKS = ('unconditional', 'well_conditioned', 'field_scale')
 # Field extent per environment. Channels are elongated along flow because that
 # is how a channel belt extends; a square box clips every channel at the same
 # length. Cell size is each environment's own and never changes.
-FIELD_EXTENT = {e: ((512, 512, 32) if e in ('lobe', 'delta') else (512, 64, 32))
+FIELD_EXTENT = {e: ((512, 512, 32) if e in ('lobe', 'delta') else (512, 128, 32))
                 for e in ENVIRONMENTS}
 NATIVE_SHAPE = (64, 64, 32)
 

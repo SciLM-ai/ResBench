@@ -25,10 +25,13 @@ channel:SH_DISTAL  channel:SH_PROXIMAL  channel:MEANDER_OXBOW  delta
 | environment | extent | notes |
 |---|---|---|
 | `lobe`, `delta` | `512 x 512 x 32` | square |
-| `channel:*` | `512 x 64 x 32` | elongated along flow; `azimuth = 0` |
+| `channel:*` | `512 x 128 x 32` | elongated along flow; `azimuth = 0` |
 
 Cell size is each environment's own and is never changed: only the number of
-cells grows.
+cells grows. The corridor is 128 wide, not 64: a sinuous channel that reaches
+a side wall ends there, and at 64 wide the far end of the corridor starves
+(PV_SHOESTRING sand in the last fifth over the first fifth: 0.34 at 64 wide,
+1.0 to 1.3 at 128).
 
 ResMill's event budget does not scale with the domain, so the generator scales
 it, and the two layer families need different laws, both measured:
@@ -36,7 +39,8 @@ it, and the two layer families need different laws, both measured:
 - **channels**: `ntime` (per level, since every channel row sets
   `ntime_per_level = True`) scales with the **area** ratio. Each event fills a
   swath, so 8x the area needs 8x the swaths. `channel:PV_SHOESTRING` at
-  `512 x 64`: NTG `0.1163` unscaled, `0.1722` native, `0.1672` scaled.
+  `512 x 64` (measured before the corridor was widened): NTG `0.1163`
+  unscaled, `0.1722` native, `0.1672` scaled.
 - **delta**: `ntime_per_gen` scales with the **linear** ratio, the square root
   of area. A delta grows outward from a point apex and branches, so it needs
   generations in proportion to how far it must build, not the area it covers.
@@ -47,12 +51,33 @@ Both are safety nets rather than stopping rules: the per-level loop stops on
 its sand target, and a generous budget costs nothing. Only the top-level
 `azimuth` rotates the model; `mCHazi` is engine-internal and is left alone.
 
-Two ResMill defects surfaced by large domains were fixed in ResMill `fa75137`:
-channel walks were clipped in the unrotated frame and then rotated, so the
-occupied region was a rotated copy of the grid (net-to-gross depended on
-azimuth, `0.534` at 45 deg vs `0.564` at 0 and 90); and the streamline safety
-net `ndis0` was sized from the mean of the two horizontal spans, far too short
-for an elongated grid. The published 64-cube dataset predates both fixes.
+Three ResMill defects surfaced while building this reference and were fixed
+in ResMill `fa75137` and `9c0bd15` (the engine every reference volume is
+generated with; `REF/ENGINE.txt` records it):
+
+- channel walks were clipped in the unrotated frame and then rotated, so the
+  occupied region was a rotated copy of the grid: corners never filled and
+  net-to-gross depended on azimuth (`0.534` at 45 deg vs `0.564` at 0 and 90);
+- streamlines entered on the upstream edge of the unrotated frame, which for
+  any azimuth off a multiple of 90 deg lies inside the grid (9 cells at 64,
+  75 cells at 512): channels, and the whole delta fan, started in the open
+  with nothing feeding them, and entries that rotated out of the grid were
+  wasted. Entries now slide along the mean flow onto the grid boundary and are
+  drawn across everything the grid spans perpendicular to the flow;
+- the walk's step cap doubled as the streamline node count, so raising the cap
+  for long grids changed every per-node rule (MEANDER_OXBOW net-to-gross fell
+  from `0.45` to `0.26`). The cap is now a separate safety net; the node
+  density stays Alluvsim's, two nodes per cell of the flow-direction span.
+
+The published 64-cube dataset predates all three, which is why the reference
+is regenerated (`--regenerate`) rather than copied. Two properties of the
+presets remain and are not defects: channel presets have a point source
+(`stdevCHsource` 80 m about the upstream edge midpoint), so at 45 deg every
+channel enters at one corner; and the delta ignores its `ntg` input
+(`NTGtarget` 0.99), so its sand fraction follows the event budget and the fan
+geometry (`0.65` at 0 and 90 deg, `0.81` at 45 and 135, where a fan from a
+corner fills the whole window). `ntg` in the manifest is always the realized
+value, so both are conditioned on, not corrected for.
 
 ## Lags
 
@@ -71,6 +96,7 @@ at the same extent as the comparison.
 | `SPLIT_SEED` | 20260918 | the half/half partition used for every band |
 | noise seed | one per manifest row | your model's starting noise |
 | field `SEED_BASE` | 2026091800 | ResMill seeds for the field reference |
+| `WELL_POOL_SEED` | 20260922 | ResMill seeds of the well pools, via `default_rng([WELL_POOL_SEED, env_index, row_index])` |
 
 ## Reference layout and manifest
 
@@ -80,7 +106,28 @@ REF/volumes/<slug>/volumes.npz          ids, volumes            512 per environm
 REF/repeats/<slug>/cond<i>.npz          ids, volumes, seeds      i = 0..4, 256 ResMill runs of reference row i
 REF/repeats/<slug>/well<i>.npz          ids, volumes, pattern, well_mask, well_xy, source_id   i = 1..5
 REF/fields/<slug>/fields.npz            ids, volumes            32 per environment
+REF/ENGINE.txt                          the ResMill commit every volume above was generated with
 ```
+
+The reference is built in this order, all with the ResMill named in `ENGINE.txt`:
+
+```
+tools/build_unconditional_reference.py --out REF --regenerate --verify manifest_lobe.csv
+tools/gen_repeats_reference.py --ref REF
+tools/mine_wells.py --ref REF --env <env> --row-index <i> --out WELLS      (one per environment)
+tools/build_wells_reference.py --ref REF --wells-dir WELLS
+tools/gen_field_reference.py --out FIELDS --n 32
+tools/build_reference.py --ref REF --fields all=FIELDS --expect 32
+```
+
+`--regenerate` runs the selected test-split rows again, same parameters and
+seeds, through the checked-out ResMill, so the reference is that engine's
+output even when the published dataset predates a fix; `ntg` is the
+regenerated volume's sand fraction. Wells follow the published rule (C.2):
+an informative column (two sand bodies separated by mud), representative
+(column sand fraction within 0.15 of the environment mean), estimable (at
+least 50 distinct exact matches from the source row's parameters); the five
+columns with the most matches are the wells, mined over `x, y in [8, 56]`.
 
 `manifest.csv` has one row per reference item and a `task` column:
 

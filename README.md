@@ -76,7 +76,7 @@ is bending the geology to fit the borehole.
 | environment | field extent | covers |
 |---|---|---|
 | `lobe`, `delta` | `512 x 512 x 32` | square |
-| `channel:*` | `512 x 64 x 32` | elongated **along flow**, azimuth forced to 0 |
+| `channel:*` | `512 x 128 x 32` | elongated **along flow**, azimuth forced to 0 |
 
 Channels are elongated in the flow direction because that is how a channel belt extends;
 a square box clips every channel at the same length and makes long-range statistics
@@ -227,7 +227,7 @@ resbench/
 │   ├── volumes/<slug>/    512 test volumes per environment
 │   ├── repeats/<slug>/    cond0–4 (256 ResMill runs each), well1–5 (up to 256 exact matches each)
 │   └── fields/<slug>/     32 ResMill fields at the §3 extent
-├── tools/                 build_*_reference.py, gen_*_reference.py, relabel_submission.py
+├── tools/                 build_*_reference.py, gen_*_reference.py, mine_wells.py, relabel_submission.py
 ├── example/               make_example.py writes a valid one-environment submission
 └── tests/
 ```
