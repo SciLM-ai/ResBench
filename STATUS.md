@@ -61,11 +61,27 @@ against the realized value rather than the target.
 | `delta` | 5 | 256 (capped) | ready |
 | `lobe` | 5 | **34 – 40** | needs ~1.6x more ResMill runs |
 
-## Not hosted yet
+## The reference directory does not exist yet
 
-The ~12 GB reference has no download location. `resbench download` says so
-rather than failing later; point ResBench at a local copy with `--reference` or
-`RESBENCH_REFERENCE`.
+There is no `ref/` a submitter can point `--reference` at. What exists, and in
+what form:
+
+| reference | state |
+|---|---|
+| `field_scale` lobe, 32 fields + manifest rows | done |
+| `field_scale` six channels and delta, 32 each | generating (`tools/gen_field_reference.py`) |
+| `unconditional`: 512 test-split volumes per environment | **never assembled** — the old protocol only recorded their ids; nothing copies them into `ref/volumes/` |
+| `well_conditioned`: 40 well ensembles | exist in the old `references/well_conditional/` layout, 7 of 8 environments adequate, lobe short (see below); not in `ref/wells/` |
+| repeat ensembles for `variety` / `calibration` | old layout holds per-condition probability maps only, not volumes; nothing in `ref/repeats/` |
+| `manifest.csv` | written by `tools/build_reference.py` (field rows so far) |
+
+`tools/build_reference.py` assembles `ref/fields/` and the manifest from
+generator output. The `unconditional` and `well_conditioned` halves of the
+reference still need building, and `cmd_score` does not yet run the
+repeats-based checks at all (`variety`, `well_blending`, `calibration`), so at
+most 9 of 12 checks can currently be scored. Once the directory is complete,
+host it or document the local path; `resbench download` currently says it is
+not hosted rather than failing later.
 
 ## Not in v1
 
