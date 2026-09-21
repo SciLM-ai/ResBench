@@ -44,16 +44,20 @@ def read_source(path):
     return out
 
 
-def manifest_rows(slug, npz):
+def manifest_rows(slug, npz, expect):
     env = UNSLUG[slug]
     z = np.load(npz, allow_pickle=True)
     ids, vols = [str(i) for i in z['ids']], z['volumes']
-    n = len(ids)
     base = SEED_BASE + 1000 * ENVS.index(env)
     ks = [int(i.rsplit('|', 1)[1]) - base for i in ids]
-    if sorted(ks) != list(range(n)):
-        raise SystemExit(f'{slug}: ids are not seeds {base}..{base + n - 1}: {ids[:3]}')
-    rows = pick_rows(env, n)          # field k <-> pick_rows(env, n)[k]
+    if len(set(ks)) != len(ks) or min(ks) < 0 or max(ks) >= expect:
+        raise SystemExit(f'{slug}: ids must be distinct seeds in '
+                         f'{base}..{base + expect - 1}, got {ids[:3]}')
+    # Field k pairs with pick_rows(env, EXPECT)[k]: the row selection is fixed
+    # by the n the generator was run with, not by how many fields happen to be
+    # present. A 7-field partial keyed into pick_rows(env, 7) would be
+    # silently matched to the wrong rows.
+    rows = pick_rows(env, expect)
     out = []
     for i, k in enumerate(ks):
         r = rows[k]
@@ -102,7 +106,7 @@ def main():
         dst.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(npz, dst / 'fields.npz')
         (dst / 'manifest.json').write_text(json.dumps(man, indent=2))
-        r = manifest_rows(slug, npz)
+        r = manifest_rows(slug, npz, a.expect)
         # Completeness comes from the count, never from a flag: a generator
         # interrupted mid-run writes checkpoints whose manifest.json may not
         # carry one.
