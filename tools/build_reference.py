@@ -87,6 +87,8 @@ def main():
                     help='fields per environment the reference is supposed to have')
     ap.add_argument('--allow-partial', action='store_true',
                     help='assemble environments with fewer than --expect fields anyway')
+    ap.add_argument('--allow-decay', action='store_true',
+                    help='assemble a channel reference whose sand decays along flow anyway')
     a = ap.parse_args()
     out = Path(a.out)
     sources = {}
@@ -114,8 +116,21 @@ def main():
         if not complete and not a.allow_partial:
             raise SystemExit(f'{slug}: {len(r)} fields, expected {a.expect}; '
                              f'pass --allow-partial to assemble it anyway')
+        # A channel reference must be uniform along flow, or it is not "the
+        # same geology in a bigger window" and would mark a correct model
+        # wrong. NTG alone cannot show this; see gen_field_reference.flow_profile.
+        from tools.gen_field_reference import flow_profile
+        fifths, ratio = flow_profile(np.load(npz, allow_pickle=True)['volumes'])
+        if UNSLUG[slug].startswith('channel:') and not (0.5 <= ratio <= 2.0):
+            msg = (f'{slug}: sand decays along flow, fifths '
+                   + ' '.join(f'{x:.3f}' for x in fifths) + f', last/first {ratio:.2f}')
+            if not a.allow_decay:
+                raise SystemExit(msg + '; channels die before the far end. Regenerate at a '
+                                 'wider extent, or pass --allow-decay to ship it as is.')
+            print('WARNING ' + msg)
         rows += r
         print(f"{slug:<26} {len(r):>3} fields  {'complete' if complete else 'PARTIAL '}"
+              f"  flow last/first {ratio:.2f}"
               f"  mean ntg {np.mean([x['ntg'] for x in r]):.4f}  "
               f"(source cube {np.mean([x['ntg_source_cube'] for x in r]):.4f})")
     from tools._manifest import upsert

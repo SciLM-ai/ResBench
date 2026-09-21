@@ -195,11 +195,34 @@ def main():
     print(f'done in {time.time()-t0:.0f}s', flush=True)
 
 
+def flow_profile(vols):
+    """Sand fraction in each fifth along x (the flow axis for channels), and
+    the last/first ratio.
+
+    Net-to-gross matching is NOT evidence that a field is right. The engine
+    keeps adding channels until each level's sand target is met, so channels
+    that die early against a side wall pile their sand near the entry and the
+    total still comes out correct. PV_SHOESTRING at 512x64: fifths 0.306
+    0.270 0.145 0.079 0.044 with the right overall NTG; the same row and seed
+    at 512x256: 0.132 0.152 0.173 0.167 0.164, and zero sand on the walls.
+    """
+    v = np.asarray(vols, np.float32); nx = v.shape[1]
+    fifths = [float(v[:, j * nx // 5:(j + 1) * nx // 5].mean()) for j in range(5)]
+    ratio = fifths[4] / fifths[0] if fifths[0] > 0 else float('nan')
+    return fifths, ratio
+
+
 def _write_env(out, env, items, partial=False):
     items.sort(key=lambda t: t[0])
     slug = env.replace(':', '_')
     d = out / slug; d.mkdir(parents=True, exist_ok=True)
     vols = np.stack([f for _, f, _ in items])
+    fifths, ratio = flow_profile(vols)
+    if env.startswith('channel:') and not partial and not (0.5 <= ratio <= 2.0):
+        print(f'WARNING {env}: sand along flow is not uniform, fifths '
+              + ' '.join(f'{x:.3f}' for x in fifths) + f', last/first {ratio:.2f}: '
+              f'channels terminate before the far end (corridor too narrow for '
+              f'this sinuosity?)', flush=True)
     ids = np.array([f'field|{slug}|{s}' for s, _, _ in items], dtype=object)
     np.savez_compressed(d / 'fields.npz', ids=ids, volumes=vols)
     grid, ext, (dx, dy) = grid_for(env)
@@ -209,6 +232,7 @@ def _write_env(out, env, items, partial=False):
         'elongated_along_flow': env.startswith('channel:'),
         'grid': grid, 'seed_base': SEED_BASE,
         'mean_ntg': float(np.mean([n for _, _, n in items])),
+        'flow_fifths': fifths, 'flow_last_over_first': ratio,
         'complete': not partial,
     }, indent=2))
     print(f'{"saved" if partial else "WROTE"} {env:<24} {len(items)} fields {vols.shape} '
