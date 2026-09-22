@@ -177,7 +177,22 @@ def main():
     for env, _, _ in tasks:
         want[env] = want.get(env, 0) + 1
 
-    got, t0 = {}, time.time()
+    # Resume: fields already checkpointed under OUT are kept and their seeds
+    # skipped, so a killed run only loses the fields that were in flight.
+    got = {}
+    for env in want:
+        f = out / env.replace(':', '_') / 'fields.npz'
+        if f.exists():
+            z = np.load(f, allow_pickle=True)
+            for i, v in zip(z['ids'], z['volumes']):
+                v = np.asarray(v, np.int8)
+                got.setdefault(env, []).append((int(str(i).rsplit('|', 1)[1]), v, float(v.mean())))
+            print(f'resuming {env}: {len(got[env])} of {want[env]} fields already on disk', flush=True)
+    have = {(env, s) for env, items in got.items() for s, _, _ in items}
+    tasks = [t for t in tasks if (t[0], t[2]) not in have]
+    for env in [e for e, items in got.items() if len(items) >= want[e]]:
+        got.pop(env)
+    t0 = time.time()
     with Pool(a.jobs) as pool:
         for i, (env, f, seed, ntg, dt) in enumerate(
                 pool.imap_unordered(_one, tasks, chunksize=1), 1):

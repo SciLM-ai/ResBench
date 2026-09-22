@@ -28,33 +28,47 @@ Cost per 64-cube on one core, either engine: PV 2 s, CB_LABYRINTH 15 s,
 CB_JIGSAW 28 s, SH_DISTAL 33 s, SH_PROXIMAL 36 s, MEANDER_OXBOW 91 s, delta
 112 s, lobe well under a second.
 
-## Reference build
+## Reference build: complete (2026-09-22)
 
-Local root: `/scratch/08405/ilgar/resbench_v1_ref` (the fa75137 build is kept
-as `resbench_v1_ref.stale_fa75137`).
+Local root: `/scratch/08405/ilgar/resbench_v1_ref`, every volume from ResMill
+`9c0bd15` (`ENGINE.txt`). The fa75137 build is kept as
+`resbench_v1_ref.stale_fa75137` for the old-versus-new comparison below.
 
-| part | state |
+| part | contents |
 |---|---|
-| `unconditional`, 512 regenerated volumes x 8, manifest rows with `ntg`, `noise_seed`, `well_x`, `well_y` | built (`build_unconditional_reference.py --regenerate --verify`) |
-| `repeats/cond0-4`, 256 runs x 5 x 8 | running (`gen_repeats_reference.py`, ~2.5 h on 40 cores) |
-| `repeats/well1-5` lobe | built from a 514k-run pool, 71 / 67 / 52 / 54 / 52 members |
-| `repeats/well1-5` PV_SHOESTRING | mining, 60k runs (`mine_wells.py`) |
-| `repeats/well1-5` the other six | mining on a 4-node job (`/scratch/08405/ilgar/mine_wells_4nodes.sbatch`, job 1012769): MEANDER 70k runs, delta 60k, CB/SH 100k to 120k, then `build_wells_reference.py --wells-dir` for all eight |
-| `fields` six channels, 32 x 512 x 128 x 32 | generating (`gen_field_reference.py`, `/scratch/08405/ilgar/field_reference_v2`) |
-| `fields` delta, 32 x 512 x 512 x 32, row azimuth | chained after the channels |
-| `fields` lobe, 32 x 512 x 512 x 32 | done earlier (`/scratch/08405/ilgar/resbench_v1_reference/ref/fields/lobe`); lobe is unaffected by the fixes |
-| assembly (`build_reference.py --fields`) and the reference-as-submission gate (every samples-based check 0) | after the fields |
+| `unconditional` | 512 regenerated test-split volumes x 8 environments, `ntg`, `noise_seed`, `well_x`, `well_y` per row |
+| `repeats/cond0-4` | 256 ResMill runs of reference rows 0-4, x 8 |
+| `repeats/well1-5` | 5 wells x 8 environments; members: lobe 52-71, PV 72-86, CB_JIGSAW 67-90, CB_LABYRINTH 152-206, SH_DISTAL 162-224, SH_PROXIMAL 245-256, MEANDER 216-256, delta 158-256 |
+| `fields` | 32 per environment: lobe and delta 512 x 512 x 32, channels 512 x 128 x 32; every corridor inside the along-flow gate (last/first fifth 0.56 to 1.83) |
+| `manifest.csv` | 4096 + 40 + 40 + 256 rows |
 
-Well pools are the expensive part: an exact-match ensemble needs about 120k
-runs of the source row (the published pools were 110k to 130k), which is 3,000
-core-hours for MEANDER or delta. `mine_wells.py` saves its pass-1 pool and
-resumes, so a pool can be grown across allocations.
+`tools/reference_self_check.py` scores the reference against itself: every
+samples-based check is 0 in all 31 (task, check) cells and the repeats-based
+checks land at 0.02 to 0.83 (first 128 members against the whole ensemble),
+overall 0.05, 31/31 matched.
+
+What it cost (gg nodes, 144 cores): unconditional 10 min; repeats ~2.5 h on 40
+cores; fields ~5 h on 40 to 56 cores; wells lobe (514k runs) and PV (60k) on one
+node, the other six on a 4-node 13-hour job (55k to 120k runs each). Per-run
+costs on one core: lobe 1.8 s, PV 3.4, CB_LABYRINTH 12.7, CB_JIGSAW 14.6,
+SH_DISTAL 18.8, SH_PROXIMAL 19.7, MEANDER 68.5, delta 89.6.
+
+## Models trained on the published dataset
+
+The published dataset predates the three engine fixes. Its own 512 test
+volumes per environment, scored as a submission against this reference on the
+nine samples-based checks, come out matched on most cells, close (1 to 1.7) on
+several, and distinguishable on CB_LABYRINTH bed thickness (4.0) and chord
+lengths (3.1); in absolute terms the shifts are a few percent (CB_LABYRINTH mean
+bed thickness 5.26 to 5.11 cells). That is the offset any model trained on the
+published data carries here. Regenerating the dataset with `9c0bd15` removes
+it: `ResMill/examples/dataset_generation/vista/` holds the launch scripts and
+the measured cost (7,861 core-hours, 55 gg node-hours, about 18 SU).
 
 ## Blocks release
 
-- Well ensembles for six environments (job above, 14 h wall).
 - Hosting: `resbench download` says the reference is not hosted; document the
-  path or host the directory once complete.
+  path or host the directory.
 
 ## Why fields are scored at their own extent
 
