@@ -31,7 +31,7 @@ reference (`9c0bd15`, earlier dataset) stays at `resbench_v1_ref` until the swap
 | part | state |
 |---|---|
 | `unconditional` | done: 512 regenerated test-split windows x 8 environments, every row bit-identical to the dataset (`--regenerate`), `ntg`, `noise_seed`, `well_x`, `well_y` per row |
-| `repeats/cond0-4` | REPEATS_STATE |
+| `repeats/cond0-4` | done: 256 ResMill runs (fresh seeds, dataset grid, each windowed by its own seed) of reference rows 0-4, x 8 environments; every condition's first member regenerated bit for bit; 38 min on 96 workers |
 | `fields` | done: 32 per environment, lobe and delta 512 x 512 x 32, channels 512 x 128 x 32, 23 min on 24 workers; every channel corridor inside the along-flow gate (last/first fifth PV 0.68, CB_LABYRINTH 1.16, CB_JIGSAW 1.58, SH_DISTAL 1.07, SH_PROXIMAL 1.63, MEANDER_OXBOW 0.57); mean field NTG lobe 0.503, PV 0.176, CB_LABYRINTH 0.320, CB_JIGSAW 0.390, SH_DISTAL 0.623, SH_PROXIMAL 0.477, MEANDER_OXBOW 0.384, delta 0.142 |
 | `repeats/well1-5` | WELLS_STATE |
 | self-check | SELFCHECK_STATE |
