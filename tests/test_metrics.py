@@ -173,3 +173,33 @@ def test_sanity_check_runs():
     tau = metrics.ensemble_connectivity(vols, LAGS)
     warnings = metrics.sanity_check(float(vols.mean()), gamma, tau)
     assert isinstance(warnings, list)
+
+
+def test_artifact_counts_matches_the_F5_definition():
+    """F.5: artifacts are 6-connected sand bodies of fewer than 8 voxels."""
+    import numpy as np
+    from resbench import metrics
+    v = np.zeros((20, 20, 8), dtype=np.int8)
+    v[1, 1, 1] = 1                       # 1 voxel  -> artifact
+    v[5:7, 5:7, 5:6] = 1                 # 4 voxels -> artifact
+    v[10:13, 10:13, 2:4] = 1             # 18 voxels-> not an artifact
+    assert metrics.ARTIFACT_MAX == 8
+    sizes = sorted(metrics.geobody_sizes(v).tolist())
+    assert sizes == [1, 4, 18]
+    assert metrics.artifact_counts([v]).tolist() == [2]
+    # boundary: exactly 8 voxels is NOT an artifact (strict <)
+    w = np.zeros((10, 10, 4), dtype=np.int8)
+    w[0:2, 0:2, 0:2] = 1                 # 8 voxels
+    assert metrics.geobody_sizes(w).tolist() == [8]
+    assert metrics.artifact_counts([w]).tolist() == [0]
+
+
+def test_analysis_scripts_use_the_shared_threshold():
+    """No script may re-declare the F.5 threshold with its own literal."""
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    for f in (root / 'analysis').glob('*.py'):
+        for line in f.read_text().splitlines():
+            if re.match(r'\s*ARTIFACT_MAX\s*=', line):
+                assert 'metrics.ARTIFACT_MAX' in line, f'{f.name}: {line.strip()}'
