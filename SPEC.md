@@ -106,7 +106,7 @@ The reference is built in this order, all with the ResMill named in `ENGINE.txt`
 ```
 tools/build_unconditional_reference.py --out REF --regenerate
 tools/gen_repeats_reference.py --ref REF
-tools/mine_wells.py --ref REF --env <env> --row-index <i> --out WELLS      (one per environment)
+tools/mine_wells.py --ref REF --env <env> --out WELLS                    (one per environment; five rows each)
 tools/build_wells_reference.py --ref REF --wells-dir WELLS
 tools/gen_field_reference.py --out FIELDS --n 32
 tools/build_reference.py --out REF --fields all=FIELDS --expect 32
@@ -120,29 +120,41 @@ run fresh seeds on the same grid and window each volume with the dataset's rule
 for that seed, so an ensemble member is distributed like a dataset sample of
 the same parameters.
 
-**Wells are the centre column of the cube.** A dataset sample is a window of a
-`128 x 128 x 64` volume at a random origin (x0, y0 in 0..64, z0 in 1..31), so
-its centre column is the volume column at (x0 + 32, y0 + 32), z0..z0 + 31, and
-the `65 x 65 x 31` such columns of a volume are every centre column a window of
-it can have. The well pool runs fresh volumes of the source row and records all
-of them; a volume matches a candidate column when the column occurs anywhere in
-that block, and the member is the window at its first occurrence, one window
-per volume. This marginalises the window origin exactly instead of by one
-random draw per volume, so pools of 2,000 volumes give the matches that
-hundreds of thousands of single-window runs would (a 40,000-window CB_JIGSAW
-pool gave the best informative column 6 exact matches at a fixed location).
-Members are windows of distinct volumes with the well at (32, 32). What this
-benchmark's well task covers, stated plainly: conditioning on the centre column
-of a 64-cube; the `well_conditioned` samples task keeps its per-row interior
-locations. Informative, representative and the threshold of 50 exact matches
-(50 distinct volumes) are unchanged. Wells follow the published rule (C.2). A
+**Wells are the centre column of the cube, five geologies per environment.**
+The five wells of an environment come from five different reference rows: the
+512 unconditional rows are ranked by realised net-to-gross and split into
+quintiles, and well i takes from quintile i the row whose characteristic size
+(`depth_cells`: channel depth, or lobe thickness) sits at the i-th quintile of
+that bin, so the wells step from thin, low-NTG geology to thick, high-NTG
+geology. A dataset sample is a window of a `128 x 128 x 64` volume at a random
+origin (x0, y0 in 0..64, z0 in 1..31), so its centre column is the volume
+column at (x0 + 32, y0 + 32), z0..z0 + 31, and the `65 x 65 x 31` such columns
+of a volume are every centre column a window of it can have. Each row's pool
+runs 500 fresh volumes and records all of them; a volume matches a candidate
+column when the column occurs anywhere in that block, and the member is the
+window at its first occurrence, one window per volume. This marginalises the
+window origin exactly instead of by one random draw per volume, so 500 volumes
+give the matches that hundreds of thousands of single-window runs would (a
+40,000-window CB_JIGSAW pool gave the best informative column 6 exact matches
+at a fixed location). Members are windows of distinct volumes with the well at
+(32, 32). What this benchmark's well task covers, stated plainly: conditioning
+on the centre column of a 64-cube, for five geologies per environment; the
+`well_conditioned` samples task keeps its per-row interior locations.
+
+A candidate column is **informative** when it has at least two sand bodies,
+each at least 2 cells thick, separated by at least 2 cells of mud (one-cell
+specks and one-cell breaks do not count), **representative** when its sand
+fraction is within 0.15 of the row's realised `ntg`, and **estimable** when at
+least 50 distinct volumes of the row's pool contain it; the most frequent such
+column of the row is the well. Wells follow the published rule (C.2). A
 well is a location `x, y in [8, 56]` and a 32-cell column that ResMill produces
 there under the source row's parameters; candidates are every (location,
 column) seen in a pool of fresh runs of that row, and a candidate must be
-informative (two sand bodies separated by mud), representative (column sand
-fraction within 0.15 of the environment mean) and estimable (at least 50
-distinct volumes contain it). The five with the most matches, distinct
-columns, are the wells; the matching volumes' windows are the ensemble.
+informative (two sand bodies of at least 2 cells separated by at least 2 cells
+of mud), representative (column sand fraction within 0.15 of the row's `ntg`)
+and estimable (at least 50 distinct volumes contain it). The most frequent such
+column of each of the five rows is a well; the matching volumes' windows are
+the ensemble.
 
 `manifest.csv` has one row per reference item and a `task` column:
 

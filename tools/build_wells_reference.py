@@ -95,14 +95,12 @@ def main():
             z = np.load(f)
             vols, pat, mask, xy = z['volumes'].astype(np.int8), z['pattern'].astype(np.int8), z['well_mask'], z['well_xy']
             # the source row: recorded in a mined file, or the one row every batch of the published pool used
-            ri_f = int(z['cond_row_index']) if 'cond_row_index' in z.files else source_row_index(env)
-            if ri is None:
-                ri = ri_f
-                src = uncond.get((env, ri))
-                if src is None:
-                    raise SystemExit(f'{env}: source row {ri} is not in the unconditional manifest')
-            elif ri_f != ri:
-                raise SystemExit(f'{f.name}: source row {ri_f}, but well1 used row {ri}')
+            # the source row: recorded in a mined file (one row per well), or the one
+            # row every batch of the published pool used
+            ri = int(z['cond_row_index']) if 'cond_row_index' in z.files else source_row_index(env)
+            src = uncond.get((env, ri))
+            if src is None:
+                raise SystemExit(f'{env}: source row {ri} is not in the unconditional manifest')
             ok = check_ensemble(f.name, vols, pat, mask, xy, a.min_n, a.allow_short)
             np.savez_compressed(d / f'{cond}.npz',
                                 ids=np.array([f'{cond}|{k}' for k in range(len(vols))], dtype=object),
