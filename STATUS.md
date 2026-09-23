@@ -33,7 +33,7 @@ reference (`9c0bd15`, earlier dataset) stays at `resbench_v1_ref` until the swap
 | `unconditional` | done: 512 regenerated test-split windows x 8 environments, every row bit-identical to the dataset (`--regenerate`), `ntg`, `noise_seed`, `well_x`, `well_y` per row |
 | `repeats/cond0-4` | done: 256 ResMill runs (fresh seeds, dataset grid, each windowed by its own seed) of reference rows 0-4, x 8 environments; every condition's first member regenerated bit for bit; 38 min on 96 workers |
 | `fields` | done: 32 per environment, lobe and delta 512 x 512 x 32, channels 512 x 128 x 32, 23 min on 24 workers; every channel corridor inside the along-flow gate (last/first fifth PV 0.68, CB_LABYRINTH 1.16, CB_JIGSAW 1.58, SH_DISTAL 1.07, SH_PROXIMAL 1.63, MEANDER_OXBOW 0.57); mean field NTG lobe 0.503, PV 0.176, CB_LABYRINTH 0.320, CB_JIGSAW 0.390, SH_DISTAL 0.623, SH_PROXIMAL 0.477, MEANDER_OXBOW 0.384, delta 0.142 |
-| `repeats/well1-5` | WELLS_STATE. Pools are eight windows per volume (SPEC.md "Reference layout"): with one window per volume a 40,000-run pool of CB_JIGSAW gave the best informative column 6 exact matches, so the published rule would have needed about 400,000 volumes there; the threshold of 50 exact matches is unchanged |
+| `repeats/well1-5` | WELLS_STATE. Wells are the cube's centre column, mined over every window origin of 2,000-volume pools (SPEC.md "Reference layout"); the one-window-per-volume rule would have needed about 400,000 volumes for CB_JIGSAW. Threshold of 50 unchanged |
 | self-check | SELFCHECK_STATE |
 
 Field budgets were recalibrated for the 128 x 128 dataset box (SPEC.md "Field

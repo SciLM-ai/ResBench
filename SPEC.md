@@ -118,22 +118,31 @@ seeds, on the dataset's `128 x 128 x 64` grid and cuts the window at the row's
 recorded origin; every row must reproduce the dataset volume exactly. Repeats
 run fresh seeds on the same grid and window each volume with the dataset's rule
 for that seed, so an ensemble member is distributed like a dataset sample of
-the same parameters. Well pools do the same but take **eight windows per
-volume** (window 0 is the dataset's draw, windows 1 to 7 further seeded draws
-of the same volume, `resmill.dataset.windows` with `k`): every window is still
-distributed like a dataset sample, and a pool costs one volume per eight
-windows. What this benchmark covers, stated plainly: a well ensemble is a set
-of windows that reproduce the well column, several of which may come from one
-volume; members of one volume share their geology, so an ensemble's effective
-size is smaller than its member count. The exact-match threshold is unchanged
-at 50. Wells follow the published rule (C.2). A
+the same parameters.
+
+**Wells are the centre column of the cube.** A dataset sample is a window of a
+`128 x 128 x 64` volume at a random origin (x0, y0 in 0..64, z0 in 1..31), so
+its centre column is the volume column at (x0 + 32, y0 + 32), z0..z0 + 31, and
+the `65 x 65 x 31` such columns of a volume are every centre column a window of
+it can have. The well pool runs fresh volumes of the source row and records all
+of them; a volume matches a candidate column when the column occurs anywhere in
+that block, and the member is the window at its first occurrence, one window
+per volume. This marginalises the window origin exactly instead of by one
+random draw per volume, so pools of 2,000 volumes give the matches that
+hundreds of thousands of single-window runs would (a 40,000-window CB_JIGSAW
+pool gave the best informative column 6 exact matches at a fixed location).
+Members are windows of distinct volumes with the well at (32, 32). What this
+benchmark's well task covers, stated plainly: conditioning on the centre column
+of a 64-cube; the `well_conditioned` samples task keeps its per-row interior
+locations. Informative, representative and the threshold of 50 exact matches
+(50 distinct volumes) are unchanged. Wells follow the published rule (C.2). A
 well is a location `x, y in [8, 56]` and a 32-cell column that ResMill produces
 there under the source row's parameters; candidates are every (location,
 column) seen in a pool of fresh runs of that row, and a candidate must be
 informative (two sand bodies separated by mud), representative (column sand
 fraction within 0.15 of the environment mean) and estimable (at least 50
-distinct runs reproduce it exactly). The five with the most matches, distinct
-locations and columns, are the wells; the matching runs are the ensemble.
+distinct volumes contain it). The five with the most matches, distinct
+columns, are the wells; the matching volumes' windows are the ensemble.
 
 `manifest.csv` has one row per reference item and a `task` column:
 
@@ -141,7 +150,7 @@ locations and columns, are the wells; the matching runs are the ensemble.
 |---|---|---|
 | `unconditional` | `<env>\|<shard_dir>\|<sample_idx>` | `ntg` (realized), `requested_ntg`, `azimuth`, slim parameters, `noise_seed`, `well_x`, `well_y` |
 | `repeats_unconditional` | `<env>\|cond<i>` | the same, copied from reference row i; `source_id` names that row |
-| `repeats_well` | `<env>\|well<i>` | `source_id` = the parameter row the ensemble was drawn from, `well_x`, `well_y`, `pattern` |
+| `repeats_well` | `<env>\|well<i>` | `source_id` = the parameter row the ensemble was drawn from, `well_x`, `well_y` (32, 32), `pattern` |
 | `field_scale` | `field\|<slug>\|<seed>` | `ntg` = the FIELD's realized sand fraction, `ntg_source_cube`, `requested_ntg`, `azimuth` |
 
 `ntg` is always the number the model is conditioned on for that item. The well
