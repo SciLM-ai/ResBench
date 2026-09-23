@@ -25,8 +25,9 @@ CB_JIGSAW 16, SH_DISTAL 21, SH_PROXIMAL 18, MEANDER_OXBOW 56, delta 11.
 
 ## Reference build
 
-Root: `/scratch/08405/ilgar/resbench_v1_ref_new` while it is built; the previous
-reference (`9c0bd15`, earlier dataset) stays at `resbench_v1_ref` until the swap.
+Root: `/scratch/08405/ilgar/resbench_v1_ref` (swapped in 2026-09-23, engine
+`3ffd173`); the previous reference (`9c0bd15`, earlier dataset) is kept at
+`resbench_v1_ref.stale_9c0bd15`.
 
 | part | state |
 |---|---|
@@ -34,7 +35,7 @@ reference (`9c0bd15`, earlier dataset) stays at `resbench_v1_ref` until the swap
 | `repeats/cond0-4` | done: 256 ResMill runs (fresh seeds, dataset grid, each windowed by its own seed) of reference rows 0-4, x 8 environments; every condition's first member regenerated bit for bit; 38 min on 96 workers |
 | `fields` | done: 32 per environment, lobe and delta 512 x 512 x 32, channels 512 x 128 x 32, 23 min on 24 workers; every channel corridor inside the along-flow gate (last/first fifth PV 0.68, CB_LABYRINTH 1.16, CB_JIGSAW 1.58, SH_DISTAL 1.07, SH_PROXIMAL 1.63, MEANDER_OXBOW 0.57); mean field NTG lobe 0.503, PV 0.176, CB_LABYRINTH 0.320, CB_JIGSAW 0.390, SH_DISTAL 0.623, SH_PROXIMAL 0.477, MEANDER_OXBOW 0.384, delta 0.142 |
 | `repeats/well1-5` | done: 5 wells x 8 environments, one well per reference row from five rows stepping through net-to-gross and size (depth 3 to 20 cells); the well is the cube's centre column, mined over every window origin of 500-volume pools; every ensemble 72 to 256 members (cap 256), each a window of a distinct volume; 70 minutes on 140 workers for all eight. Rules: informative = at least two sand bodies of at least 2 cells separated by at least 2 cells of mud, all inside the column; representative = within 0.15 of the row's own ntg; estimable = 50 volumes; the five columns of an environment are distinct. Dropped on the way: one window per volume (about 400,000 volumes for CB_JIGSAW), one source row per environment (five near-identical wells, two-speck delta columns), bodies touching the cube face (two-cell stubs) |
-| self-check | running at the time of writing (`tools/reference_self_check.py REF OUT`); the previous reference's self-check came out matched in all 31 cells |
+| self-check | pending: `tools/reference_self_check.py REF OUT` started 2026-09-23 13:47 on the same files, result not yet recorded; the previous reference's self-check came out matched in all 31 cells |
 
 Field budgets were recalibrated for the 128 x 128 dataset box (SPEC.md "Field
 extent"): area law for the avulsion-dominated channels, edge law for
