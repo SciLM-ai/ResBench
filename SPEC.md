@@ -10,6 +10,7 @@ so nothing here is a judgment call at scoring time.
 | dataset | `SiliciclasticReservoirs` (HuggingFace) |
 | split | 90 / 5 / 5 train / validation / test, stratified by environment, seed 42 |
 | volume | `64 x 64 x 32` int8, `1 = sand`, axes `(x, y, z)`, depth last |
+| origin of a volume | one window of a `128 x 128 x 64` ResMill volume, origin from `default_rng([42, seed])`: x, y uniform on 0..64, z uniform on 1..31, redrawn while the window has no sand (`resmill.dataset.windows`); the dataset row records it as `crop_x0, crop_y0, crop_z0` |
 | cell size | `lobe` 100 x 100 x 1 m; the other seven 10 x 10 x 1 m |
 | reference | 512 test-split volumes per environment, ids in `reference/manifest.csv` |
 
@@ -33,51 +34,41 @@ a side wall ends there, and at 64 wide the far end of the corridor starves
 (PV_SHOESTRING sand in the last fifth over the first fifth: 0.34 at 64 wide,
 1.0 to 1.3 at 128).
 
+A field is a complete 32 m column, as tall as a training window, generated on
+the environment's own cell size at the field extent. The dataset simulates a
+64 m column and windows 32 m of it, so a field keeps the row's **aggradation
+ratio** (level spacing over channel depth) rather than its level count:
+`nlevel_field = round((32 - depth) / (ratio x depth)) + 1`, the same rule the
+dataset sampler used for 64 m.
+
 ResMill's event budget does not scale with the domain, so the generator scales
-it, and the two layer families need different laws, both measured:
+it from the dataset box (`128 x 128`) to the field, with laws calibrated per
+family against each row's native `128 x 128 x 64` volume (2026-09-23,
+`tools/gen_field_reference.py`):
 
-- **channels**: `ntime` (per level, since every channel row sets
-  `ntime_per_level = True`) scales with the **area** ratio. Each event fills a
-  swath, so 8x the area needs 8x the swaths. `channel:PV_SHOESTRING` at
-  `512 x 64` (measured before the corridor was widened): NTG `0.1163`
-  unscaled, `0.1722` native, `0.1672` scaled.
-- **delta**: `ntime_per_gen` scales with the **linear** ratio, the square root
-  of area. A delta grows outward from a point apex and branches, so it needs
-  generations in proportion to how far it must build, not the area it covers.
-  At 16x area, 4x events gives NTG `0.5608` against `0.5416` native; 4x events
-  at 4x area overshoots to `0.6673` and 1x undershoots to `0.4012`.
+- **channels, avulsion-dominated** (`PV_SHOESTRING`, `CB_*`, `SH_*`): `ntime`
+  (per level) scales with the **area** ratio, 4x at `512 x 128`. Their sand
+  targets are reached, so the field net-to-gross matches the native volume
+  whatever the budget: field / native 0.96 to 1.17 measured.
+- **`MEANDER_OXBOW`** (one migrating belt per level, budget-limited): `ntime`
+  scales with the **edge** ratio, 2x at `512 x 128`: field / native 0.98 and
+  1.08, against 0.73 to 0.83 unscaled and 1.18 to 1.59 with the area law.
+- **delta** (distributary trees, no net-to-gross target): the number of
+  networks per generation `n_trees` and the bifurcations per network
+  `n_bifurcations` both scale with the **edge** ratio, 4x at `512 x 512`:
+  field / native 1.13, 0.65, 1.11; bifurcations alone leave the field at a
+  third of the native value because terminal branches are capped by `q_min`.
 
-Both are safety nets rather than stopping rules: the per-level loop stops on
-its sand target, and a generous budget costs nothing. Only the top-level
-`azimuth` rotates the model; `mCHazi` is engine-internal and is left alone.
+These are safety nets rather than stopping rules for the channel families: the
+per-level loop stops on its sand target. Only the top-level `azimuth` rotates
+the model; `mCHazi` is engine-internal and is left alone.
 
-Three ResMill defects surfaced while building this reference and were fixed
-in ResMill `fa75137` and `9c0bd15` (the engine every reference volume is
-generated with; `REF/ENGINE.txt` records it):
-
-- channel walks were clipped in the unrotated frame and then rotated, so the
-  occupied region was a rotated copy of the grid: corners never filled and
-  net-to-gross depended on azimuth (`0.534` at 45 deg vs `0.564` at 0 and 90);
-- streamlines entered on the upstream edge of the unrotated frame, which for
-  any azimuth off a multiple of 90 deg lies inside the grid (9 cells at 64,
-  75 cells at 512): channels, and the whole delta fan, started in the open
-  with nothing feeding them, and entries that rotated out of the grid were
-  wasted. Entries now slide along the mean flow onto the grid boundary and are
-  drawn across everything the grid spans perpendicular to the flow;
-- the walk's step cap doubled as the streamline node count, so raising the cap
-  for long grids changed every per-node rule (MEANDER_OXBOW net-to-gross fell
-  from `0.45` to `0.26`). The cap is now a separate safety net; the node
-  density stays Alluvsim's, two nodes per cell of the flow-direction span.
-
-The published 64-cube dataset predates all three, which is why the reference
-is regenerated (`--regenerate`) rather than copied. Two properties of the
-presets remain and are not defects: channel presets have a point source
-(`stdevCHsource` 80 m about the upstream edge midpoint), so at 45 deg every
-channel enters at one corner; and the delta ignores its `ntg` input
-(`NTGtarget` 0.99), so its sand fraction follows the event budget and the fan
-geometry (`0.65` at 0 and 90 deg, `0.81` at 45 and 135, where a fan from a
-corner fills the whole window). `ntg` in the manifest is always the realized
-value, so both are conditioned on, not corrected for.
+Every reference volume is generated with the ResMill named in `REF/ENGINE.txt`,
+the engine that generated the dataset itself (`3ffd173` or later; the fluvial
+walker's entries lie on the grid boundary, walks are clipped by the real grid,
+and the walk cap is separate from the node density). `--regenerate` proves it:
+every selected test-split row, run again with its seed on the dataset grid and
+windowed at its recorded origin, reproduces the dataset volume bit for bit.
 
 ## Lags
 
@@ -97,6 +88,7 @@ at the same extent as the comparison.
 | noise seed | one per manifest row | your model's starting noise |
 | field `SEED_BASE` | 2026091800 | ResMill seeds for the field reference |
 | `WELL_POOL_SEED` | 20260922 | ResMill seeds of the well pools, via `default_rng([WELL_POOL_SEED, env_index, row_index])` |
+| window `crop_seed` | 42 | the dataset's window origin per sample, via `default_rng([42, seed])` (`resmill.dataset.windows`) |
 
 ## Reference layout and manifest
 
@@ -112,18 +104,21 @@ REF/ENGINE.txt                          the ResMill commit every volume above wa
 The reference is built in this order, all with the ResMill named in `ENGINE.txt`:
 
 ```
-tools/build_unconditional_reference.py --out REF --regenerate --verify manifest_lobe.csv
+tools/build_unconditional_reference.py --out REF --regenerate
 tools/gen_repeats_reference.py --ref REF
 tools/mine_wells.py --ref REF --env <env> --row-index <i> --out WELLS      (one per environment)
 tools/build_wells_reference.py --ref REF --wells-dir WELLS
 tools/gen_field_reference.py --out FIELDS --n 32
-tools/build_reference.py --ref REF --fields all=FIELDS --expect 32
+tools/build_reference.py --out REF --fields all=FIELDS --expect 32
+tools/reference_self_check.py REF OUT
 ```
 
 `--regenerate` runs the selected test-split rows again, same parameters and
-seeds, through the checked-out ResMill, so the reference is that engine's
-output even when the published dataset predates a fix; `ntg` is the
-regenerated volume's sand fraction. Wells follow the published rule (C.2). A
+seeds, on the dataset's `128 x 128 x 64` grid and cuts the window at the row's
+recorded origin; every row must reproduce the dataset volume exactly. Repeats
+and well pools run fresh seeds on the same grid and window each volume with the
+dataset's rule for that seed, so an ensemble member is distributed like a
+dataset sample of the same parameters. Wells follow the published rule (C.2). A
 well is a location `x, y in [8, 56]` and a 32-cell column that ResMill produces
 there under the source row's parameters; candidates are every (location,
 column) seen in a pool of fresh runs of that row, and a candidate must be

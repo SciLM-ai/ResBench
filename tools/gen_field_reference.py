@@ -78,9 +78,15 @@ MARGIN_XY, SEED_BASE = 0, 2026091800
 # Event-budget scaling from the dataset box (128 x 128) to the field, as
 # powers of the area ratio: 1.0 = with the area, 0.5 = with the edge, 0 = none.
 # Calibrated per family against native volumes (see SPEC.md "Field extent").
-CHANNEL_NTIME_AREA_EXP = {'default': 1.0}
+# Calibrated 2026-09-23 on 512 x 128 (channels, 4x area) and 512 x 512 (delta,
+# 16x area) against each row's native 128 x 128 x 64 volume:
+#   PV, CB_LABYRINTH at x4:            field / native 1.06, 1.00, 0.96, 1.15
+#   SH_DISTAL, SH_PROXIMAL, CB_JIGSAW: 1.00 to 1.17 whatever the budget (targets are reached)
+#   MEANDER_OXBOW (budget-limited):    x1 0.83 / 0.73, x2 0.98 / 1.08, x4 1.59 / 1.18 -> edge law
+#   delta n_trees x edge (x4):         1.13, 0.65, 1.11; x2: 0.68, 0.43, 0.78 -> edge law
+CHANNEL_NTIME_AREA_EXP = {'default': 1.0, 'channel:MEANDER_OXBOW': 0.5}
 DELTA_BIFURCATION_EDGE_EXP = 1.0        # bifurcations per network, power of the edge ratio
-DELTA_TREES_EDGE_EXP = 0.0              # networks per generation, power of the edge ratio
+DELTA_TREES_EDGE_EXP = 1.0              # networks per generation, power of the edge ratio
 
 
 def extent_for(env):
