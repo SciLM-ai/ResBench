@@ -116,9 +116,17 @@ tools/reference_self_check.py REF OUT
 `--regenerate` runs the selected test-split rows again, same parameters and
 seeds, on the dataset's `128 x 128 x 64` grid and cuts the window at the row's
 recorded origin; every row must reproduce the dataset volume exactly. Repeats
-and well pools run fresh seeds on the same grid and window each volume with the
-dataset's rule for that seed, so an ensemble member is distributed like a
-dataset sample of the same parameters. Wells follow the published rule (C.2). A
+run fresh seeds on the same grid and window each volume with the dataset's rule
+for that seed, so an ensemble member is distributed like a dataset sample of
+the same parameters. Well pools do the same but take **eight windows per
+volume** (window 0 is the dataset's draw, windows 1 to 7 further seeded draws
+of the same volume, `resmill.dataset.windows` with `k`): every window is still
+distributed like a dataset sample, and a pool costs one volume per eight
+windows. What this benchmark covers, stated plainly: a well ensemble is a set
+of windows that reproduce the well column, several of which may come from one
+volume; members of one volume share their geology, so an ensemble's effective
+size is smaller than its member count. The exact-match threshold is unchanged
+at 50. Wells follow the published rule (C.2). A
 well is a location `x, y in [8, 56]` and a 32-cell column that ResMill produces
 there under the source row's parameters; candidates are every (location,
 column) seen in a pool of fresh runs of that row, and a candidate must be

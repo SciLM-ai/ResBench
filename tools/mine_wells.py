@@ -23,6 +23,15 @@ which is what build_wells_reference.py --wells-dir reads. Seeds come from
 default_rng([WELL_POOL_SEED, env_index, row_index]); the source row's own seed
 is excluded.
 
+A run is one WINDOW of a fresh 128 x 128 x 64 ResMill volume, cut exactly as
+the dataset cuts its samples (resmill.dataset.windows). Every volume yields
+--windows of them (default 8, window 0 being the dataset's own draw, the others
+further seeded draws of the same volume), so the pool costs one volume per
+eight windows. Windows of one volume share their geology: an ensemble may hold
+several members from one volume and its effective size is smaller than its
+count. The pool file records (seed, window) per row and a member is
+(seed, window) too, so everything regenerates.
+
 Pass 1 is saved to OUT/<slug>_pool.npz (seeds, volume hashes, column keys) and
 resumed: running again with a larger --draws only runs the seeds not drawn
 yet, so a pool can be grown across allocations. MEANDER_OXBOW and delta cost
@@ -39,7 +48,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from resbench.io import ENVIRONMENTS, SLUG                                   # noqa: E402
-from tools.gen_repeats_reference import native_kwargs, load_row, dataset_sample  # noqa: E402
+from tools.gen_repeats_reference import native_kwargs, load_row, engine_grid  # noqa: E402
 
 WELL_POOL_SEED = 20260922
 INTERIOR = (8, 56)          # inclusive, the published mining window
@@ -70,15 +79,29 @@ def informative(col):
     return int(((c[1:] == 1) & (c[:-1] == 0)).sum() + (c[0] == 1)) >= 2
 
 
-def _run(task):
-    env, row, seed = task
+def _volume(env, row, seed):
     os.environ.setdefault('MPLBACKEND', 'Agg')
-    return dataset_sample(env, row, seed)      # engine volume + the dataset's window rule
+    from resmill.dataset.generate import generate_sample
+    f, _, _, _, _ = generate_sample({'layer_type': env.split(':')[0],
+                                     'params': native_kwargs(row, env), 'seed': int(seed)}, engine_grid(env))
+    return np.asarray(f, np.int8)
+
+
+def _windows(vol, seed, ks):
+    from resmill.dataset.windows import dataset_window
+    return [(int(k), dataset_window(vol, int(seed), k=int(k))[1]) for k in ks]
 
 
 def _pass1(task):
-    f = _run(task)
-    return int(task[2]), hdigest(f), column_keys(f)
+    env, row, seed, ks = task
+    vol = _volume(env, row, seed)
+    return [(int(seed), k, hdigest(w), column_keys(w)) for k, w in _windows(vol, seed, ks)]
+
+
+def _pass2(task):
+    env, row, seed, ks = task
+    vol = _volume(env, row, seed)
+    return [(int(seed), k, w) for k, w in _windows(vol, seed, ks)]
 
 
 def main():
@@ -91,6 +114,7 @@ def main():
     ap.add_argument('--jobs', type=int, default=48)
     ap.add_argument('--min-n', type=int, default=MIN_N)
     ap.add_argument('--cap', type=int, default=CAP)
+    ap.add_argument('--windows', type=int, default=8, help='windows per volume in the pool (window 0 is the dataset draw)')
     a = ap.parse_args()
     ref, out, env = Path(a.ref), Path(a.out), a.env
     out.mkdir(parents=True, exist_ok=True)
@@ -115,40 +139,50 @@ def main():
 
     # pass 1: the column at every interior location of every run; resumable
     pool_file = out / f'{SLUG[env]}_pool.npz'
-    done = {}                       # seed -> (hash, keys)
+    done = {}                       # (seed, window) -> (hash, keys)
     if pool_file.exists():
         z0 = np.load(pool_file, allow_pickle=True)
         if str(z0['source_id']) != src['id']:
             raise SystemExit(f'{pool_file}: pool of {z0["source_id"]}, not {src["id"]}')
-        done = {int(s): (bytes(h), k) for s, h, k in zip(z0['seeds'], z0['hashes'], z0['keys'])}
-        print(f'resuming: {len(done)} runs already in {pool_file.name}', flush=True)
+        wins = z0['windows'] if 'windows' in z0.files else np.zeros(len(z0['seeds']), np.int64)
+        done = {(int(s), int(w)): (bytes(h), k) for s, w, h, k in zip(z0['seeds'], wins, z0['hashes'], z0['keys'])}
+        print(f'resuming: {len(done)} windows of {len({s for s, _ in done})} volumes already in {pool_file.name}', flush=True)
 
     def save():
+        items = list(done.items())
         np.savez_compressed(pool_file, source_id=np.array(src['id']),
-                            seeds=np.array(list(done), np.int64),
-                            hashes=np.array([v[0] for v in done.values()], dtype='S16'),
-                            keys=np.stack([v[1] for v in done.values()]))
+                            seeds=np.array([s for (s, _), _ in items], np.int64),
+                            windows=np.array([w for (_, w), _ in items], np.int64),
+                            hashes=np.array([v[0] for _, v in items], dtype='S16'),
+                            keys=np.stack([v[1] for _, v in items]))
 
-    tasks = [(env, row, s) for s in seeds if s not in done]
+    # every volume of the pool gets windows 0..W-1; a grown or older pool only runs what is missing
+    tasks = []
+    for s in seeds:
+        ks = [k for k in range(a.windows) if (s, k) not in done]
+        if ks:
+            tasks.append((env, row, s, ks))
     t0 = time.time()
     if tasks:
         with Pool(a.jobs) as pool:
-            for k, (seed, h, keys) in enumerate(pool.imap_unordered(_pass1, tasks, chunksize=8), 1):
-                done[seed] = (h, keys)
-                if k % 2000 == 0 or k == len(tasks):
+            for n, results in enumerate(pool.imap_unordered(_pass1, tasks, chunksize=4), 1):
+                for seed, k, h, keys in results:
+                    done[(seed, k)] = (h, keys)
+                if n % 1000 == 0 or n == len(tasks):
                     save()
-                    print(f'  {k}/{len(tasks)} new runs ({len(done)} in pool)  {time.time() - t0:.0f}s', flush=True)
+                    print(f'  {n}/{len(tasks)} volumes ({len(done)} windows in pool)  {time.time() - t0:.0f}s', flush=True)
 
-    # distinct runs, in seed order so a grown pool extends the same ensembles
+    # distinct windows, in (seed, window) order so a grown pool extends the same ensembles
     order, seen, dup = [], set(), 0
     for s in seeds:
-        if s in done:
-            if done[s][0] in seen:
-                dup += 1
-                continue
-            seen.add(done[s][0]); order.append(s)
-    K = np.stack([done[s][1] for s in order])            # (runs, locations)
-    print(f'pool: {len(order)} distinct runs, {dup} duplicates', flush=True)
+        for k in range(a.windows):
+            if (s, k) in done:
+                if done[(s, k)][0] in seen:
+                    dup += 1
+                    continue
+                seen.add(done[(s, k)][0]); order.append((s, k))
+    K = np.stack([done[sk][1] for sk in order])            # (windows, locations)
+    print(f'pool: {len(order)} distinct windows of {len({s for s, _ in order})} volumes, {dup} duplicates', flush=True)
 
     # candidates: (location, column) with count >= min_n, informative, representative
     cands = []
@@ -175,28 +209,36 @@ def main():
         col = key_to_column(key)
         print(f'  well ({x:>2},{y:>2})  column {"".join(map(str, col))}  sand {col.mean():.2f}  {n} exact matches', flush=True)
     if len(chosen) < 5:
-        print(f'SHORT: only {len(chosen)} wells reach {a.min_n} matches in {len(order)} distinct runs; raise --draws', flush=True)
+        print(f'SHORT: only {len(chosen)} wells reach {a.min_n} matches in {len(order)} distinct windows; raise --draws', flush=True)
 
     # pass 2: regenerate the matching runs of each chosen well
     with Pool(a.jobs) as pool:
         for i, (n, p, key) in enumerate(chosen, start=1):
             x, y = LO + p // (HI - LO), LO + p % (HI - LO)
             col = key_to_column(key)
-            want = [s for s, k in zip(order, K[:, p]) if int(k) == key][:a.cap]
-            vols = pool.map(_run, [(env, row, s) for s in want], chunksize=4)
+            want = [sk for sk, kk in zip(order, K[:, p]) if int(kk) == key][:a.cap]
+            by_seed = {}
+            for s, k in want:
+                by_seed.setdefault(s, []).append(k)
+            got = {}
+            for results in pool.imap_unordered(_pass2, [(env, row, s, ks) for s, ks in by_seed.items()], chunksize=2):
+                for s, k, w in results:
+                    got[(s, k)] = w
             keep = []
-            for s, f in zip(want, vols):
+            for s, k in want:
+                f = got[(s, k)]
                 if not np.array_equal(f[x, y, :], col):
-                    raise SystemExit(f'seed {s} no longer reproduces the column at ({x},{y}); '
+                    raise SystemExit(f'seed {s} window {k} no longer reproduces the column at ({x},{y}); '
                                      f'ResMill is not deterministic')
-                keep.append((s, f))
+                keep.append((s, k, f))
             mask = np.zeros((64, 64, NZ), np.uint8); mask[x, y, :] = 1
             np.savez_compressed(out / f'{SLUG[env]}_well{i}.npz',
-                                volumes=np.stack([f for _, f in keep]), pattern=col.copy(),
+                                volumes=np.stack([f for _, _, f in keep]), pattern=col.copy(),
                                 well_mask=mask, well_xy=np.array([x, y], np.int64),
                                 cond_row_index=np.int64(a.row_index),
-                                seeds=np.array([s for s, _ in keep], np.int64))
-            print(f'WROTE {SLUG[env]}_well{i}.npz  ({x},{y})  {len(keep)} members  {time.time() - t0:.0f}s', flush=True)
+                                seeds=np.array([s for s, _, _ in keep], np.int64),
+                                windows=np.array([k for _, k, _ in keep], np.int64))
+            print(f'WROTE {SLUG[env]}_well{i}.npz  ({x},{y})  {len(keep)} members from {len(by_seed)} volumes  {time.time() - t0:.0f}s', flush=True)
     print(f'done in {time.time() - t0:.0f}s')
 
 
