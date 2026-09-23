@@ -64,28 +64,68 @@ ENGINE_IGNORE = {
     'dh_ave_m', 'dh_ave_cells',
     'mCHdepth_m', 'mCHdepth_cells', 'mCHwidth_m', 'mCHwidth_cells',
     'width_cells', 'depth_cells',
+    # window provenance of a dataset sample (the dataset stores one 64x64x32
+    # window of every 128x128x64 engine volume; resmill.dataset.windows)
+    'crop_x0', 'crop_y0', 'crop_z0', 'crop_nx', 'crop_ny', 'crop_nz', 'crop_seed',
+    'source_shard', 'source_row',
 }
 
 SQUARE = (512, 512)
 ELONGATED = (512, 128)           # extended along flow only; 128 wide so sinuous
                                  # channels do not end on a side wall
-NATIVE_XY = (64, 64)             # the training extent the budgets were tuned for
-MARGIN_XY, SEED_BASE = 8, 2026091800
+FIELD_NZ = 32                    # the scored field is 32 cells tall, like a training window
+MARGIN_XY, SEED_BASE = 0, 2026091800
+# Event-budget scaling from the dataset box (128 x 128) to the field, as
+# powers of the area ratio: 1.0 = with the area, 0.5 = with the edge, 0 = none.
+# Calibrated per family against native volumes (see SPEC.md "Field extent").
+CHANNEL_NTIME_AREA_EXP = {'default': 1.0}
+DELTA_BIFURCATION_EDGE_EXP = 1.0        # bifurcations per network, power of the edge ratio
+DELTA_TREES_EDGE_EXP = 0.0              # networks per generation, power of the edge ratio
 
 
 def extent_for(env):
     return SQUARE if env in ('lobe', 'delta') else ELONGATED
 
 
+def engine_grid(env):
+    """The environment's own dataset grid: the volume the dataset windows are
+    cut from (128 x 128 x 64, no crop)."""
+    g = {k: v for k, v in json.loads((CONFIG_DIR / CONFIG_FOR_ENV[env]).read_text())['grid'].items()
+         if not k.startswith('_')}
+    g.pop('crop', None)
+    return g
+
+
 def grid_for(env):
-    """The environment's own grid, widened to the field extent. Cell size,
-    depth, crop margins and every other convention are left untouched."""
-    g = dict(json.loads((CONFIG_DIR / CONFIG_FOR_ENV[env]).read_text())['grid'])
+    """The environment's own grid at the field extent: cell size unchanged,
+    x and y widened, 32 cells tall (a field is a complete 32 m column, as tall
+    as a training window; the dataset simulates 64 m and windows 32 of them)."""
+    g = engine_grid(env)
     dx, dy = g['x_len'] / g['nx'], g['y_len'] / g['ny']
+    dz = g['z_len'] / g['nz']
     ex, ey = extent_for(env)
     g['nx'], g['ny'] = ex + 2 * MARGIN_XY, ey + 2 * MARGIN_XY
     g['x_len'], g['y_len'] = dx * g['nx'], dy * g['ny']
+    g['nz'], g['z_len'] = FIELD_NZ, dz * FIELD_NZ
     return g, (ex, ey), (dx, dy)
+
+
+def levels_for_column(row, z_len):
+    """The row's number of levels for a column of height ``z_len``, keeping its
+    aggradation ratio (level spacing over channel depth): the dataset sampled
+    the ratio and derived ``nlevel`` for its 64 m column as
+    round((64 - depth) / (ratio * depth)) + 1, both layers anchoring the bottom
+    level's base on the floor."""
+    key = 'n_generations' if 'n_generations' in row and row['n_generations'] is not None else 'nlevel'
+    n = int(row[key]); d = float(row['mCHdepth'])
+    g = engine_grid_z(row)
+    ratio = (g - d) / (max(n - 1, 1) * d) if n > 1 else 1.0
+    return key, max(1, int(round((z_len - d) / (ratio * d))) + 1)
+
+
+def engine_grid_z(row):
+    """z_len the row's level count was derived for (the dataset grid)."""
+    return 64.0
 
 
 def engine_kwargs(row, env):
@@ -115,10 +155,22 @@ def engine_kwargs(row, env):
     #             0.5416 native; 4x events at 4x area overshoots to 0.6673 and
     #             1x undershoots to 0.4012.
     ex, ey = extent_for(env)
-    area = (ex * ey) / (NATIVE_XY[0] * NATIVE_XY[1])
-    for k, ratio in (('ntime', area), ('ntime_per_gen', area ** 0.5)):
+    g0 = engine_grid(env)
+    area = (ex * ey) / (g0['nx'] * g0['ny'])          # the box the budgets were sampled for
+    exp = CHANNEL_NTIME_AREA_EXP.get(env, CHANNEL_NTIME_AREA_EXP['default'])
+    for k, ratio in (('ntime', area ** exp), ('ntime_per_gen', area ** 0.5)):
         if k in kw and kw[k]:
             kw[k] = int(round(kw[k] * ratio))
+    if env == 'delta' and kw.get('bifurcate'):
+        edge = ex / g0['nx']
+        if kw.get('n_bifurcations'):
+            kw['n_bifurcations'] = int(round(kw['n_bifurcations'] * edge ** DELTA_BIFURCATION_EDGE_EXP))
+        if kw.get('n_trees'):
+            kw['n_trees'] = int(round(kw['n_trees'] * edge ** DELTA_TREES_EDGE_EXP))
+    # a field is 32 cells tall: keep the row's aggradation ratio, not its level count
+    if 'mCHdepth' in kw:
+        key, n = levels_for_column(row, FIELD_NZ * (g0['z_len'] / g0['nz']))
+        kw[key] = n
     return kw
 
 
@@ -131,7 +183,7 @@ def _one(task):
         {'layer_type': env.split(':')[0], 'params': engine_kwargs(row, env),
          'seed': int(seed)}, grid)
     f = np.asarray(facies, np.int8)
-    assert f.shape == (ex, ey, 32), f'{env}: got {f.shape}, want {(ex, ey, 32)}'
+    assert f.shape == (ex, ey, FIELD_NZ), f'{env}: got {f.shape}, want {(ex, ey, FIELD_NZ)}'
     return env, f, int(seed), float(f.mean()), time.time() - t0
 
 
@@ -244,7 +296,7 @@ def _write_env(out, env, items, partial=False):
     grid, ext, (dx, dy) = grid_for(env)
     (d / 'manifest.json').write_text(json.dumps({
         'environment': env, 'n': len(items),
-        'extent': [ext[0], ext[1], 32], 'cell_m': [dx, dy, 1.0],
+        'extent': [ext[0], ext[1], FIELD_NZ], 'cell_m': [dx, dy, grid['z_len'] / grid['nz']],
         'elongated_along_flow': env.startswith('channel:'),
         'grid': grid, 'seed_base': SEED_BASE,
         'mean_ntg': float(np.mean([n for _, _, n in items])),

@@ -3,8 +3,9 @@ runs of ONE input, five conditions per environment.
 
 Reads the task=repeats_unconditional rows of REF/manifest.csv (written by
 build_unconditional_reference.py), regenerates each condition's source row
-with N fresh ResMill seeds at NATIVE extent -- the environment's own grid,
-no azimuth override, no event scaling -- and writes
+with N fresh ResMill seeds at NATIVE extent -- the environment's own 128 x 128 x 64
+grid, no azimuth override, no event scaling, then the dataset's 64 x 64 x 32 window
+rule (resmill.dataset.windows) -- and writes
 REF/repeats/<slug>/cond<i>.npz holding `ids`, `volumes` and `seeds`.
 
 Seeds come from default_rng([SEED_BASE, env_index, cond_index]), the scheme
@@ -26,7 +27,7 @@ import pyarrow.parquet as pq
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from resbench.io import ENVIRONMENTS, SLUG                                   # noqa: E402
 from tools.gen_field_reference import (RESMILL_REPO, CONFIG_DIR, CONFIG_FOR_ENV,  # noqa: E402
-                                       ENGINE_IGNORE, DATA_DIR)
+                                       ENGINE_IGNORE, DATA_DIR, engine_grid)
 sys.path.insert(0, str(RESMILL_REPO))
 
 SEED_BASE = 20260921
@@ -50,14 +51,22 @@ def native_kwargs(row, env):
 def _one(task):
     env, cond, row, seed = task
     os.environ.setdefault('MPLBACKEND', 'Agg')
-    from resmill.dataset.generate import generate_sample
-    grid = json.loads((CONFIG_DIR / CONFIG_FOR_ENV[env]).read_text())['grid']
-    facies, _, _, _, _ = generate_sample(
-        {'layer_type': env.split(':')[0], 'params': native_kwargs(row, env),
-         'seed': int(seed)}, grid)
-    f = np.asarray(facies, np.int8)
+    f = dataset_sample(env, row, seed)
     assert f.shape == (64, 64, 32), f.shape
     return env, cond, int(seed), f
+
+
+def dataset_sample(env, row, seed):
+    """One dataset-style sample of `row` under `seed`: the engine volume on
+    the environment's own 128 x 128 x 64 grid, windowed exactly as the dataset
+    windows its volumes (resmill.dataset.windows, crop_seed 42 and this seed)."""
+    from resmill.dataset.generate import generate_sample
+    from resmill.dataset.windows import dataset_window
+    facies, _, _, _, _ = generate_sample(
+        {'layer_type': env.split(':')[0], 'params': native_kwargs(row, env),
+         'seed': int(seed)}, engine_grid(env))
+    _, f = dataset_window(np.asarray(facies, np.int8), int(seed))
+    return f
 
 
 def load_row(shard_dir, sample_idx):

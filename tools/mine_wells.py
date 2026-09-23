@@ -39,7 +39,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from resbench.io import ENVIRONMENTS, SLUG                                   # noqa: E402
-from tools.gen_repeats_reference import native_kwargs, load_row, CONFIG_DIR, CONFIG_FOR_ENV  # noqa: E402
+from tools.gen_repeats_reference import native_kwargs, load_row, dataset_sample  # noqa: E402
 
 WELL_POOL_SEED = 20260922
 INTERIOR = (8, 56)          # inclusive, the published mining window
@@ -73,11 +73,7 @@ def informative(col):
 def _run(task):
     env, row, seed = task
     os.environ.setdefault('MPLBACKEND', 'Agg')
-    from resmill.dataset.generate import generate_sample
-    grid = json.loads((CONFIG_DIR / CONFIG_FOR_ENV[env]).read_text())['grid']
-    f, _, _, _, _ = generate_sample({'layer_type': env.split(':')[0],
-                                     'params': native_kwargs(row, env), 'seed': int(seed)}, grid)
-    return np.asarray(f, np.int8)
+    return dataset_sample(env, row, seed)      # engine volume + the dataset's window rule
 
 
 def _pass1(task):
