@@ -11,12 +11,14 @@ from thin, low-NTG geology to thick, high-NTG geology. A candidate column is
 
     informative     at least two sand bodies, each at least 2 cells thick,
                     separated by at least 2 cells of mud (one-cell specks and
-                    one-cell breaks do not count);
+                    one-cell breaks do not count), all of them inside the
+                    column (mud in its top and base cell, so no body is a stub
+                    cut by the cube face);
     representative  |column sand fraction - the row's realised ntg| <= 0.15;
     estimable       at least --min-n distinct volumes of the row's pool contain it.
 
-The most frequent such column of each row is that row's well; the matching
-volumes give the ensemble.
+The most frequent such column of each row that no earlier well of the
+environment already uses is that row's well; the matching volumes give the ensemble.
 
 What a match is, stated plainly. The dataset stores one 64 x 64 x 32 window of
 every 128 x 128 x 64 ResMill volume at a seeded random origin (x0, y0 in
@@ -113,10 +115,13 @@ def n_bodies_strict(c, min_body=MIN_BODY, min_gap=MIN_GAP):
 
 
 def candidate_mask(keys, row_ntg, tol=NTG_TOL):
-    """informative (strict bodies) and representative (sand fraction within tol of the row's ntg)."""
+    """informative (strict bodies, all of them inside the column: mud at both
+    ends, so no body is a stub truncated by the cube's top or base) and
+    representative (sand fraction within tol of the row's ntg)."""
     k = np.asarray(keys, np.uint32).ravel()
     c = bits(k)
-    ok = (n_bodies_strict(c) >= 2) & (np.abs(c.mean(1) - row_ntg) <= tol)
+    inside = ~c[:, 0] & ~c[:, -1]
+    ok = inside & (n_bodies_strict(c) >= 2) & (np.abs(c.mean(1) - row_ntg) <= tol)
     return ok.reshape(np.asarray(keys).shape)
 
 
@@ -160,7 +165,7 @@ def _pass2(task):
     return int(seed), np.ascontiguousarray(f[x0:x0 + WIN[0], y0:y0 + WIN[1], z0:z0 + WIN[2]])
 
 
-def mine_row(env, row_index, well_i, ref, out, draws, jobs, min_n, cap, uncond):
+def mine_row(env, row_index, well_i, ref, out, draws, jobs, min_n, cap, uncond, used_keys=()):
     """Pool of `draws` volumes of reference row `row_index`; its most frequent
     informative, representative column becomes well `well_i`."""
     src = next(r for r in uncond if int(r['row_index']) == row_index)
@@ -221,9 +226,10 @@ def mine_row(env, row_index, well_i, ref, out, draws, jobs, min_n, cap, uncond):
     rank = np.argsort(-counts, kind='stable')
     print(f'  pool: {len(seeds)} volumes, {len(ukeys):,} distinct informative+representative columns; '
           f'top counts {counts[rank[:5]].tolist()} volumes', flush=True)
+    rank = [j for j in rank if int(ukeys[j]) not in set(used_keys)]
     if not len(rank) or counts[rank[0]] < min_n:
-        print(f'  SHORT: best column in {int(counts[rank[0]]) if len(rank) else 0} volumes of {len(seeds)}; raise --draws', flush=True)
-        return False
+        print(f'  SHORT: best unused column in {int(counts[rank[0]]) if len(rank) else 0} volumes of {len(seeds)}; raise --draws', flush=True)
+        return None
 
     mm = np.memmap(keyfile, dtype=np.uint32, mode='r', shape=(n_slots, NX_KEYS, NX_KEYS, NZ0))
     key = int(ukeys[rank[0]])
@@ -254,7 +260,7 @@ def mine_row(env, row_index, well_i, ref, out, draws, jobs, min_n, cap, uncond):
                         seeds=np.array([s_ for s_, _ in members], np.int64),
                         origins=np.array([o for _, o in members], np.int64))
     print(f'WROTE {slug}_well{well_i}.npz  ({x},{y})  {len(vols)} members, one window per volume  {time.time() - t0:.0f}s', flush=True)
-    return True
+    return key
 
 
 def main():
@@ -277,10 +283,13 @@ def main():
               if r['task'] == 'unconditional' and r['environment'] == env]
     plan = [(a.well_index, a.row_index)] if a.row_index is not None else list(enumerate(pick_rows(uncond), start=1))
     print(f'{env}: wells from rows {[r for _, r in plan]}', flush=True)
-    t0 = time.time(); short = 0
+    t0 = time.time(); short = 0; used = []
     for well_i, ri in plan:
-        if not mine_row(env, ri, well_i, ref, out, a.draws, a.jobs, a.min_n, a.cap, uncond):
+        key = mine_row(env, ri, well_i, ref, out, a.draws, a.jobs, a.min_n, a.cap, uncond, used)
+        if key is None:
             short += 1
+        else:
+            used.append(key)
     print(f'done in {time.time() - t0:.0f}s' + (f'  ({short} SHORT)' if short else ''), flush=True)
 
 

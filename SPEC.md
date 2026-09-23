@@ -143,15 +143,18 @@ on the centre column of a 64-cube, for five geologies per environment; the
 
 A candidate column is **informative** when it has at least two sand bodies,
 each at least 2 cells thick, separated by at least 2 cells of mud (one-cell
-specks and one-cell breaks do not count), **representative** when its sand
-fraction is within 0.15 of the row's realised `ntg`, and **estimable** when at
-least 50 distinct volumes of the row's pool contain it; the most frequent such
-column of the row is the well. Wells follow the published rule (C.2). A
+specks and one-cell breaks do not count), all of them inside the column (mud
+in its top and base cell, so no body is a stub cut by the cube face),
+**representative** when its sand fraction is within 0.15 of the row's realised
+`ntg`, and **estimable** when at least 50 distinct volumes of the row's pool
+contain it; the most frequent such column of the row that no earlier well of
+the environment already uses is the well, so the five wells are five distinct
+columns of five different geologies. Wells follow the published rule (C.2). A
 well is a location `x, y in [8, 56]` and a 32-cell column that ResMill produces
 there under the source row's parameters; candidates are every (location,
 column) seen in a pool of fresh runs of that row, and a candidate must be
 informative (two sand bodies of at least 2 cells separated by at least 2 cells
-of mud), representative (column sand fraction within 0.15 of the row's `ntg`)
+of mud, all inside the column), representative (column sand fraction within 0.15 of the row's `ntg`)
 and estimable (at least 50 distinct volumes contain it). The most frequent such
 column of each of the five rows is a well; the matching volumes' windows are
 the ensemble.
