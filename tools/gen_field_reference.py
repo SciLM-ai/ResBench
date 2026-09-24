@@ -9,7 +9,14 @@ a 0.0190 band). See SPEC.md section 7.
 
 Extent per environment:
   lobe, delta            square,    512 x 512 x 32   (64x the training area)
-  channel:*              elongated, 512 x  64 x 32   (8x, all of it along flow)
+  channel:*              elongated, 512 x 128 x 32   (16x, all of it along flow)
+
+Vertically a field is built exactly like a training window. The engine runs
+the dataset's own 64 m column with the row's own level count (bottom level on
+the floor, top level on the roof, as in every dataset volume) and the stored
+32-cell field is the window the dataset rule draws for the field's seed
+(`resmill.dataset.windows.window_origin`, z0 in 1..31), so a field never
+contains the engine's floor or roof, just as no training window does.
 
 Channels are extended along flow and not sideways because that is how a channel
 belt actually grows; a square box clips every channel at the same length and
@@ -39,6 +46,7 @@ RESMILL_REPO = Path(os.environ.get(
     'RESMILL_REPO', '/work/08405/ilgar/vista/codes/ResMill_ls6'))
 sys.path.insert(0, str(RESMILL_REPO))
 CONFIG_DIR = RESMILL_REPO / 'examples' / 'dataset_generation'
+from resmill.dataset.windows import window_origin, WINDOW, CROP_SEED, Z_MIN  # noqa: E402
 
 DATA_DIR = Path(os.environ.get(
     'RESERVOIR_DATA_DIR',
@@ -73,7 +81,7 @@ ENGINE_IGNORE = {
 SQUARE = (512, 512)
 ELONGATED = (512, 128)           # extended along flow only; 128 wide so sinuous
                                  # channels do not end on a side wall
-FIELD_NZ = 32                    # the scored field is 32 cells tall, like a training window
+FIELD_NZ = 32                    # the stored field is 32 cells tall: a window of the 64 m engine column
 MARGIN_XY, SEED_BASE = 0, 2026091800
 # Event-budget scaling from the dataset box (128 x 128) to the field, as
 # powers of the area ratio: 1.0 = with the area, 0.5 = with the edge, 0 = none.
@@ -103,35 +111,25 @@ def engine_grid(env):
 
 
 def grid_for(env):
-    """The environment's own grid at the field extent: cell size unchanged,
-    x and y widened, 32 cells tall (a field is a complete 32 m column, as tall
-    as a training window; the dataset simulates 64 m and windows 32 of them)."""
+    """The environment's own grid at the field extent: cell size and column
+    height unchanged (the dataset's 64 cells), x and y widened. The stored
+    field is the FIELD_NZ-tall window of that column drawn by the dataset rule
+    for the field's seed (``field_window_z0``)."""
     g = engine_grid(env)
     dx, dy = g['x_len'] / g['nx'], g['y_len'] / g['ny']
-    dz = g['z_len'] / g['nz']
     ex, ey = extent_for(env)
     g['nx'], g['ny'] = ex + 2 * MARGIN_XY, ey + 2 * MARGIN_XY
     g['x_len'], g['y_len'] = dx * g['nx'], dy * g['ny']
-    g['nz'], g['z_len'] = FIELD_NZ, dz * FIELD_NZ
     return g, (ex, ey), (dx, dy)
 
 
-def levels_for_column(row, z_len):
-    """The row's number of levels for a column of height ``z_len``, keeping its
-    aggradation ratio (level spacing over channel depth): the dataset sampled
-    the ratio and derived ``nlevel`` for its 64 m column as
-    round((64 - depth) / (ratio * depth)) + 1, both layers anchoring the bottom
-    level's base on the floor."""
-    key = 'n_generations' if 'n_generations' in row and row['n_generations'] is not None else 'nlevel'
-    n = int(row[key]); d = float(row['mCHdepth'])
-    g = engine_grid_z(row)
-    ratio = (g - d) / (max(n - 1, 1) * d) if n > 1 else 1.0
-    return key, max(1, int(round((z_len - d) / (ratio * d))) + 1)
-
-
-def engine_grid_z(row):
-    """z_len the row's level count was derived for (the dataset grid)."""
-    return 64.0
+def field_window_z0(env, seed):
+    """z0 of the stored window: the dataset's draw for this seed, made on the
+    dataset grid so the x0 and y0 draws that precede z0 in the stream are the
+    dataset's too. The mud-only redraw clause is not applied: it exists for
+    64-cubes, and ``_one`` asserts that the 512-wide window holds sand."""
+    g0 = engine_grid(env)
+    return window_origin(CROP_SEED, seed, (g0['nx'], g0['ny'], g0['nz']), WINDOW, Z_MIN)[2]
 
 
 def engine_kwargs(row, env):
@@ -173,10 +171,7 @@ def engine_kwargs(row, env):
             kw['n_bifurcations'] = int(round(kw['n_bifurcations'] * edge ** DELTA_BIFURCATION_EDGE_EXP))
         if kw.get('n_trees'):
             kw['n_trees'] = int(round(kw['n_trees'] * edge ** DELTA_TREES_EDGE_EXP))
-    # a field is 32 cells tall: keep the row's aggradation ratio, not its level count
-    if 'mCHdepth' in kw:
-        key, n = levels_for_column(row, FIELD_NZ * (g0['z_len'] / g0['nz']))
-        kw[key] = n
+    # The column is the dataset's own 64 m, so the row's level count is used as is.
     return kw
 
 
@@ -189,7 +184,11 @@ def _one(task):
         {'layer_type': env.split(':')[0], 'params': engine_kwargs(row, env),
          'seed': int(seed)}, grid)
     f = np.asarray(facies, np.int8)
-    assert f.shape == (ex, ey, FIELD_NZ), f'{env}: got {f.shape}, want {(ex, ey, FIELD_NZ)}'
+    assert f.shape == (ex, ey, grid['nz']), f'{env}: got {f.shape}, want {(ex, ey, grid["nz"])}'
+    z0 = field_window_z0(env, seed)
+    f = np.ascontiguousarray(f[:, :, z0:z0 + FIELD_NZ])
+    assert f.shape == (ex, ey, FIELD_NZ), f'{env}: window {f.shape}, want {(ex, ey, FIELD_NZ)}'
+    assert f.any(), f'{env} seed {seed}: the window at z0 {z0} is mud only'
     return env, f, int(seed), float(f.mean()), time.time() - t0
 
 
@@ -298,11 +297,13 @@ def _write_env(out, env, items, partial=False):
               f'channels terminate before the far end (corridor too narrow for '
               f'this sinuosity?)', flush=True)
     ids = np.array([f'field|{slug}|{s}' for s, _, _ in items], dtype=object)
-    np.savez_compressed(d / 'fields.npz', ids=ids, volumes=vols)
+    z0s = [field_window_z0(env, s) for s, _, _ in items]
+    np.savez_compressed(d / 'fields.npz', ids=ids, volumes=vols, z0=np.array(z0s, np.int16))
     grid, ext, (dx, dy) = grid_for(env)
     (d / 'manifest.json').write_text(json.dumps({
         'environment': env, 'n': len(items),
         'extent': [ext[0], ext[1], FIELD_NZ], 'cell_m': [dx, dy, grid['z_len'] / grid['nz']],
+        'engine_nz': grid['nz'], 'window_z0': z0s,
         'elongated_along_flow': env.startswith('channel:'),
         'grid': grid, 'seed_base': SEED_BASE,
         'mean_ntg': float(np.mean([n for _, _, n in items])),

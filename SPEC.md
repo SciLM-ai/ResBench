@@ -34,12 +34,15 @@ a side wall ends there, and at 64 wide the far end of the corridor starves
 (PV_SHOESTRING sand in the last fifth over the first fifth: 0.34 at 64 wide,
 1.0 to 1.3 at 128).
 
-A field is a complete 32 m column, as tall as a training window, generated on
-the environment's own cell size at the field extent. The dataset simulates a
-64 m column and windows 32 m of it, so a field keeps the row's **aggradation
-ratio** (level spacing over channel depth) rather than its level count:
-`nlevel_field = round((32 - depth) / (ratio x depth)) + 1`, the same rule the
-dataset sampler used for 64 m.
+A field is built vertically exactly like a training window: ResMill runs the
+dataset's own 64 m column with the row's own level count, on the environment's
+own cell size at the field extent, and the stored 32-cell field is the window
+the dataset rule (`resmill.dataset.windows.window_origin`, z0 in 1..31) draws
+for the field's seed. A field therefore never contains the engine's floor or
+roof, as no training window does. (A directly generated 32 m column had them:
+lobe sand fell from 0.72 at the base to 0.18 at the roof and the delta floor
+held 0.01 sand; the windowed fields are flat, at unchanged mean net-to-gross.)
+`fields.npz` records each field's `z0`.
 
 ResMill's event budget does not scale with the domain, so the generator scales
 it from the dataset box (`128 x 128`) to the field, with laws calibrated per
