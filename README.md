@@ -7,13 +7,18 @@ simulating deposition: channels migrating and avulsing, lobes spreading and stac
 benchmark can tell apart from ResMill's.
 
 ```bash
-pip install resbench
-resbench download                   # ResMill reference volumes, ~12 GB
+pip install "resbench[download]"
+resbench download                   # ResMill reference from HuggingFace, 250 MB
 resbench validate ./my_submission   # shapes, ids, counts; fails fast
 resbench score    ./my_submission   # the table below, plus results.json
 ```
 
-Python 3.10+, five packages (`numpy`, `scipy`, `pandas`, `pyarrow`, `matplotlib`).
+The reference is [`SciLM/ResBench-reference`](https://huggingface.co/datasets/SciLM/ResBench-reference),
+pinned in the code to one revision so scores never drift. `score` downloads it on first
+use if `download` was skipped; `--reference PATH` scores against a local copy instead.
+
+Python 3.10+, five packages (`numpy`, `scipy`, `pandas`, `pyarrow`, `matplotlib`), plus
+`huggingface_hub` for the download.
 **No GPU, no PyTorch, no geomodeling software** — it reads saved volumes off disk and
 does arithmetic on them. ResBench never loads your checkpoint and never imports your
 code, so any architecture, framework, language or sampler can be scored.

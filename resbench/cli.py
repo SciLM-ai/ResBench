@@ -1,12 +1,14 @@
 """resbench — validate and score a submission.
 
+    resbench download
     resbench validate ./my_submission
-    resbench score    ./my_submission --reference ./reference
+    resbench score    ./my_submission [--reference ./reference]
     resbench figures  results.json
 
-`download` reports where the reference data must come from rather than
-fetching it: the reference is not hosted yet (see STATUS.md), so pretending
-otherwise would just fail confusingly later.
+The reference lives on HuggingFace (REFERENCE_REPO), pinned to one revision so
+that a later upload can never change anyone's score. `download` fetches it into
+the HuggingFace cache; `score` uses that copy, downloading it on first use,
+unless --reference PATH or RESBENCH_REFERENCE points at a local one.
 """
 import argparse, json, os, sys
 from pathlib import Path
@@ -17,22 +19,34 @@ from . import checks as _checks
 from . import bands, io, score
 
 REFERENCE_ENV = 'RESBENCH_REFERENCE'
+REFERENCE_REPO = 'SciLM/ResBench-reference'
+REFERENCE_REVISION = '9087d11c9f1c18697f01be5a98358a0a52329944'
+
+
+def _fetch_reference(offline=False):
+    """Path of the pinned reference in the HuggingFace cache, downloading it
+    unless ``offline``."""
+    try:
+        from huggingface_hub import snapshot_download
+    except ImportError:
+        raise SystemExit('Downloading the reference needs huggingface_hub: '
+                         'pip install "resbench[download]" (or pass --reference PATH).')
+    return Path(snapshot_download(REFERENCE_REPO, repo_type='dataset',
+                                  revision=REFERENCE_REVISION, local_files_only=offline))
 
 
 def _reference_root(arg):
     root = arg or os.environ.get(REFERENCE_ENV)
-    if not root:
-        raise SystemExit(
-            'No reference data. Pass --reference PATH or set '
-            f'{REFERENCE_ENV}. See STATUS.md: the reference is not hosted yet.')
-    return Path(root)
+    if root:
+        return Path(root)
+    print(f'reference: {REFERENCE_REPO} @ {REFERENCE_REVISION[:7]}', flush=True)
+    return _fetch_reference()
 
 
 def cmd_download(a):
-    print(f'The ResBench reference is not hosted yet (see STATUS.md).\n'
-          f'Point ResBench at a local copy with --reference PATH or '
-          f'{REFERENCE_ENV}=PATH.')
-    return 1
+    path = _fetch_reference()
+    print(f'reference {REFERENCE_REPO} @ {REFERENCE_REVISION[:7]} is at {path}')
+    return 0
 
 
 def _envs(a):

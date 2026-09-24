@@ -25,7 +25,7 @@ CB_JIGSAW 16, SH_DISTAL 21, SH_PROXIMAL 18, MEANDER_OXBOW 56, delta 11.
 
 ## Reference build
 
-Root: `/scratch/08405/ilgar/resbench_v1_ref` (swapped in 2026-09-23, engine
+Root: `/scratch/08405/ilgar/resbench_v1_ref`, hosted as `SciLM/ResBench-reference` (swapped in 2026-09-23, engine
 `3ffd173`); the previous reference (`9c0bd15`, earlier dataset) is kept at
 `resbench_v1_ref.stale_9c0bd15`.
 
@@ -42,10 +42,12 @@ extent"): area law for the avulsion-dominated channels, edge law for
 MEANDER_OXBOW's `ntime`, edge law for the delta's `n_trees` and
 `n_bifurcations`.
 
-## Blocks release
+## Hosting
 
-- Hosting: `resbench download` says the reference is not hosted; document the
-  path or host the directory.
+The reference is on HuggingFace at `SciLM/ResBench-reference` (public, uploaded
+2026-09-24, revision `9087d11`, pinned in `resbench/cli.py`). `resbench download`
+fetches it; `resbench score` without `--reference` uses the cached copy or
+downloads it. Nothing blocks release.
 
 ## Why fields are scored at their own extent
 

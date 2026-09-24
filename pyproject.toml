@@ -19,6 +19,7 @@ dependencies = [
 resbench = "resbench.cli:main"
 
 [project.optional-dependencies]
+download = ["huggingface_hub>=0.20"]
 dev = ["pytest>=7.0"]
 
 [tool.setuptools.packages.find]
