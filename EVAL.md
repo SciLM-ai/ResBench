@@ -13,7 +13,7 @@ as input and imports nothing from ResFlow or ResMill.
 
 ## 1. Data
 
-- Dataset: `AnonymouScientist/SiliciclasticReservoirs` (HuggingFace), binary
+- Dataset: `SciLM/SiliciclasticReservoirs` (HuggingFace), binary
   facies channel only, volumes of shape (X, Y, Z) = (64, 64, 32) int8 {0, 1},
   z (depth) last axis.
 - Splits: the dataset's shipped `splits/test.parquet` (90/5/5
