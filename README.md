@@ -9,7 +9,7 @@ benchmark can tell apart from ResMill's.
 ```bash
 pip install "resbench[download]"
 resbench download                   # ResMill reference from HuggingFace, 250 MB
-resbench validate ./my_submission   # shapes, ids, counts; fails fast
+resbench validate ./my_submission   # shapes, ids; counts too with --reference; fails fast
 resbench score    ./my_submission   # the table below, plus results.json
 ```
 
@@ -98,8 +98,8 @@ cutting ResMill's *own* fields into 64-cubes and scoring them against natively b
 ## 4. The twelve checks
 
 Each is one specific way a reservoir model can be wrong. Nine run in every task;
-`variety`, `well_blending` and `calibration` need 128 runs of one fixed input, which at
-field scale is unaffordable.
+`variety`, `well_blending` and `calibration` need many runs of one fixed input (one per
+ResMill run, §6), which at field scale is unaffordable.
 
 **W1** below is the earth-mover distance: sort both sets of values and average the gap
 between them. Used wherever the quantity is a pile of numbers with no natural pairing.
@@ -115,9 +115,9 @@ between them. Used wherever the quantity is a pile of numbers with no natural pa
 | `body_size` | Are the blobs the right size? | Same flood-fill; pool every blob's cell count, take log₁₀ so a body twice too big counts the same at 10 cells as at 10,000. | W1 on log₁₀ sizes |
 | `chord_lengths` | How wide are bodies where blobs are ambiguous, and how elongated? | Amalgamated lobes flood-fill into one blob, so `body_size` measures welded clumps. A chord needs no such decision: scan lines within each depth slice, along the azimuth and across it. | W1 on log₁₀ lengths + abs. difference in the along/across ratio |
 | `speckle` | Stray grains, and worse under conditioning? | Sand blobs under 8 cells per volume, also reported against well count. | abs. difference |
-| `variety` | Given identical inputs, does it vary as much as ResMill? | 128 runs on one input; per-cell P(sand) → entropy in bits. Unconditionally ResMill's map is nearly flat (mean 0.98, sd 0.02), so the signal is the *level*: a collapsing model falls away from it. | mean abs. difference, bits |
+| `variety` | Given identical inputs, does it vary as much as ResMill? | Many runs of one input, one per ResMill run; per-cell P(sand) → entropy in bits. Unconditionally ResMill's map is nearly flat (mean 0.98, sd 0.02), so the signal is the *level*: a collapsing model falls away from it. | mean abs. difference, bits |
 | `well_blending` | Does the borehole blend into the rock, or leave a seam? | Same entropy map with a well present, binned by distance. ResMill runs 0.00 at the well then 0.13, 0.22, 0.39, 0.55, 0.81, 0.96 at distance 1, 2, 4, 6, 10, 20. **The only check that measures conditioning** — well reproduction error is zero for everybody by construction. | mean abs. difference of the decay curve, bits; signed near-field offset reported beside it |
-| `calibration` | Of cells called sand 70% of the time, are 70% sand? | Same 128 runs, different question. Bin off-well cells by stated probability, compare against ResMill's actual frequency. **Not `variety` again**: entropy is symmetric, `H(0.3) = H(0.7)`, so a model that inverts every probability scores 0.000 on `variety` and 0.375 here. | expected calibration error |
+| `calibration` | Of cells called sand 70% of the time, are 70% sand? | Same runs, different question. Bin off-well cells by stated probability, compare against ResMill's actual frequency. **Not `variety` again**: entropy is symmetric, `H(0.3) = H(0.7)`, so a model that inverts every probability scores 0.000 on `variety` and 0.375 here. | expected calibration error |
 
 Deliberately absent: **well reproduction error** (zero for everybody by construction),
 **power spectra** (the Fourier dual of the variogram), **sand-fraction spread** (implied by
@@ -128,10 +128,17 @@ Deliberately absent: **well reproduction error** (zero for everybody by construc
 ## 5. Score
 
 ```
-band  = check( half of ResMill , the other half )
-s     = check( your model , ResMill )  /  band
+band  = mean over random splits of  check( half of ResMill , the other half )
+s     = mean over random draws of   check( your model , a half of ResMill )  /  band
 score = average of s over every check, task and environment
 ```
+
+Your model enters each draw at the same size as a half of ResMill, so both sides of the
+ratio carry the same sampling noise. Sample-based checks average 500 splits and draws;
+repeats-based checks 200, and there each of your runs is tied to one ResMill run (§6): the
+runs tied to one half are compared with ResMill's other half, so no run is ever compared
+with the ResMill run whose sand fraction it was given. A model that *is* ResMill scores
+1 on average.
 
 **`s = 1` means your model is as close to ResMill as ResMill is to itself.** Lower is
 better and **1.0 is the floor, not zero**.
@@ -169,10 +176,10 @@ my_submission/
 ├── submission.yaml                    # model, params, sampler, NFE, training set
 ├── unconditional/<slug>/
 │   ├── samples/*.npz                  # 512 volumes, one per reference volume, same ids
-│   └── repeats/cond0.npz … cond4.npz  # 128 runs each of the condition's parameters
+│   └── repeats/cond0.npz … cond4.npz  # one run per ResMill run of the condition (256)
 ├── well_conditioned/<slug>/
 │   ├── samples/*.npz                  # 512 volumes, same ids, borehole read from the reference
-│   └── repeats/well1.npz … well5.npz  # 128 runs each, honoring the published well
+│   └── repeats/well1.npz … well5.npz  # one run per ResMill match, honoring the published well
 └── field_scale/<slug>/
     └── fields/*.npz                   # 32 fields at the §3 extent, ids from the manifest
 ```
@@ -183,15 +190,22 @@ my_submission/
 | part | id | where the condition comes from |
 |---|---|---|
 | `samples` | the reference volume's id, e.g. `lobe\|lobe/shard_0002\|192` | that manifest row: parameters, and for the well task the borehole at `(well_x, well_y)` of the reference volume |
-| `repeats/cond<i>.npz` | `cond<i>\|<k>`, k = 0…127 | manifest row `<env>\|cond<i>` (task `repeats_unconditional`) |
-| `repeats/well<i>.npz` | `well<i>\|<k>`, k = 0…127 | manifest row `<env>\|well<i>` (task `repeats_well`): its `source_id` parameters plus the pattern at `(well_x, well_y)` |
+| `repeats/cond<i>.npz` | `cond<i>\|<k>` for ResMill run k | manifest row `<env>\|cond<i>` (task `repeats_unconditional`), sand fraction set to run k's realized value |
+| `repeats/well<i>.npz` | `well<i>\|<k>` for ResMill run k | manifest row `<env>\|well<i>` (task `repeats_well`): its `source_id` parameters plus the pattern at `(well_x, well_y)`, sand fraction set to run k's realized value |
 | `fields` | `field\|<slug>\|<seed>` from the manifest | manifest row of that field: its realized sand fraction is the condition |
 
 Well cells in a well-conditioned volume must equal the pattern exactly; the harness treats
 them as given and excludes them from `calibration`.
 
+**Repeat inputs.** ResMill is given a sand fraction and its runs scatter around it, so a
+repeat condition asks for one run per ResMill run, conditioned on that run's realized sand
+fraction. Both ensembles then carry the same spread of sand fractions and the three repeats
+checks see only the spatial uncertainty. `resbench repeat-inputs --out repeat_inputs.json`
+lists the values per environment, task and condition, in run order: 256 for each `cond<i>`,
+and for each well as many as it has exact matches.
+
 ```bash
-resbench validate ./my_submission --envs lobe              # one environment while you develop
+resbench validate ./my_submission --reference REF --envs lobe   # one environment while you develop
 resbench score ./my_submission --reference REF --envs lobe
 resbench score ./my_submission --reference REF --target-column ntg_source_cube
 #   ^ only for a submission generated BEFORE the manifest existed; see SPEC.md
@@ -224,9 +238,9 @@ resbench/
 ├── resbench/
 │   ├── checks/            one module per check, one test each
 │   ├── metrics.py         the low-level estimators
-│   ├── bands.py           split-half bands
+│   ├── bands.py           split-half bands, averaged over random splits
 │   ├── score.py           normalizing, averaging, verdicts
-│   └── cli.py             download · validate · score · figures
+│   └── cli.py             download · validate · score · repeat-inputs · figures
 ├── reference/
 │   ├── manifest.csv       one row per reference item; `task` says which kind
 │   ├── volumes/<slug>/    512 test volumes per environment

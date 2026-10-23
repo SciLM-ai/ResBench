@@ -4,7 +4,7 @@ Scores directories of saved volumes against a reference ensemble; imports
 nothing from any generative model or data engine. Protocol: EVAL.md.
 """
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 
 LAYER_TYPES = [
     'lobe',

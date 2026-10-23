@@ -20,6 +20,9 @@ ENV = 'lobe'
 SLUG = io.SLUG[ENV]
 
 
+K = 128     # runs per repeat condition in these synthetic ensembles
+
+
 def smooth_noise(n, p=0.45, seed=0, shape=(64, 64, 32)):
     r = np.random.default_rng(seed)
     v = r.random((n,) + shape)
@@ -34,13 +37,14 @@ def pin_column(vols, xy, pattern):
 
 def test_variety_catches_a_collapsed_model():
     m = checks.CHECKS['variety']
-    ref = smooth_noise(256, seed=1)                     # reference-sized ensemble
-    ok = smooth_noise(io.K_REPEATS, seed=2)             # a different but honest draw
-    collapsed = np.repeat(smooth_noise(1, seed=3), io.K_REPEATS, axis=0)
+    ref = smooth_noise(2 * K, seed=1)                   # reference-sized ensemble
+    ok = smooth_noise(K, seed=2)                        # a different but honest draw
+    collapsed = np.repeat(smooth_noise(1, seed=3), K, axis=0)
     ctx = {'condition_id': 'cond0'}
-    b = bands.band_for_repeats(m, {'cond0': (ref, ctx)})
-    s_ok = score.s_for_check(m.compare(m.summarize(ok, ctx), m.summarize(ref, ctx))['parts'], b)
-    s_bad = score.s_for_check(m.compare(m.summarize(collapsed, ctx), m.summarize(ref, ctx))['parts'], b)
+    groups = {'cond0': (ref, ctx)}
+    b = bands.expected_band_repeats(m, groups, k=20)
+    s_ok = score.s_for_check(bands.matched_distance_repeats(m, {'cond0': ok}, groups, k=20), b)
+    s_bad = score.s_for_check(bands.matched_distance_repeats(m, {'cond0': collapsed}, groups, k=20), b)
     assert s_ok < score.CLOSE, s_ok                     # honest: inside or close
     assert s_bad > score.CLOSE and s_bad > 3 * s_ok     # collapsed: distinguishable
     assert m.compare(m.summarize(ref, ctx), m.summarize(ref, ctx))['parts']['entropy_mae'] == 0.0
@@ -121,39 +125,40 @@ def small_fields(monkeypatch):
         monkeypatch.setitem(io.FIELD_EXTENT, e, (64, 64, 32))
 
 
-def test_cli_scores_all_twelve_and_reference_against_itself_is_zero(tmp_path, small_fields, capsys):
+def test_cli_scores_all_twelve_and_reference_against_itself(tmp_path, small_fields, capsys):
     vols = smooth_noise(24, seed=10)
-    reps = {c: smooth_noise(io.K_REPEATS, seed=20 + i) for i, c in enumerate(io.CONDITIONS['unconditional'])}
+    reps = {c: smooth_noise(K, seed=20 + i) for i, c in enumerate(io.CONDITIONS['unconditional'])}
     pat = np.array([1] * 16 + [0] * 16, np.int8)
-    wells = {c: (pin_column(smooth_noise(io.K_REPEATS, seed=40 + i), (20 + i, 20), pat), (20 + i, 20), pat)
+    wells = {c: (pin_column(smooth_noise(K, seed=40 + i), (20 + i, 20), pat), (20 + i, 20), pat)
              for i, c in enumerate(io.CONDITIONS['well_conditioned'])}
     ref, sub = tmp_path / 'ref', tmp_path / 'sub'
     _build_reference(ref, vols, reps, wells)
     _build_submission(sub, vols, reps, wells)
 
     assert cli.main(['validate', str(sub), '--envs', ENV]) == 0, capsys.readouterr().out
+    import json
     out = tmp_path / 'r.json'
     assert cli.main(['score', str(sub), '--reference', str(ref), '--out', str(out)]) == 0
-    import json
-    res = json.load(open(out))
-    scored = {(r['task'], r['check']): r['s'] for r in res['rows']}
+    scored = {(r['task'], r['check']): r['s'] for r in json.load(open(out))['rows']}
     for task in io.TASKS:
         expected = {m.NAME for m in checks.for_task(task)}
         got = {c for (t, c) in scored if t == task}
         assert got == expected, f'{task}: scored {sorted(got)}, expected {sorted(expected)}'
-    assert all(abs(s) < 1e-9 for s in scored.values()), scored
     assert len(scored) == 11 + 11 + 9
+    # random halves are compared at the band's sample size, so the reference against itself is finite and
+    # non-negative (about 1 for real data; this toy data is far too small to pin it)
+    assert all(np.isfinite(s) and s >= 0 for s in scored.values()), scored
 
 
 def test_cli_a_defective_submission_scores_positive_where_it_should(tmp_path, small_fields):
     vols = smooth_noise(24, seed=10)
-    reps = {c: smooth_noise(io.K_REPEATS, seed=20 + i) for i, c in enumerate(io.CONDITIONS['unconditional'])}
+    reps = {c: smooth_noise(K, seed=20 + i) for i, c in enumerate(io.CONDITIONS['unconditional'])}
     pat = np.array([1] * 16 + [0] * 16, np.int8)
-    wells = {c: (pin_column(smooth_noise(io.K_REPEATS, seed=40 + i), (20 + i, 20), pat), (20 + i, 20), pat)
+    wells = {c: (pin_column(smooth_noise(K, seed=40 + i), (20 + i, 20), pat), (20 + i, 20), pat)
              for i, c in enumerate(io.CONDITIONS['well_conditioned'])}
     ref, sub = tmp_path / 'ref', tmp_path / 'sub'
     _build_reference(ref, vols, reps, wells)
-    bad_reps = {c: np.repeat(v[:1], io.K_REPEATS, axis=0) for c, v in reps.items()}   # collapsed
+    bad_reps = {c: np.repeat(v[:1], K, axis=0) for c, v in reps.items()}   # collapsed
     _build_submission(sub, vols, bad_reps, wells, fields=1 - vols[:8])              # inverted fields
     out = tmp_path / 'r.json'
     assert cli.main(['score', str(sub), '--reference', str(ref), '--out', str(out)]) == 0
@@ -175,9 +180,9 @@ def test_score_refuses_a_reference_without_a_manifest(tmp_path, small_fields):
 
 def test_figures_command_writes_pdfs(tmp_path, small_fields):
     vols = smooth_noise(24, seed=10)
-    reps = {c: smooth_noise(io.K_REPEATS, seed=20 + i) for i, c in enumerate(io.CONDITIONS['unconditional'])}
+    reps = {c: smooth_noise(K, seed=20 + i) for i, c in enumerate(io.CONDITIONS['unconditional'])}
     pat = np.array([1] * 16 + [0] * 16, np.int8)
-    wells = {c: (pin_column(smooth_noise(io.K_REPEATS, seed=40 + i), (20 + i, 20), pat), (20 + i, 20), pat)
+    wells = {c: (pin_column(smooth_noise(K, seed=40 + i), (20 + i, 20), pat), (20 + i, 20), pat)
              for i, c in enumerate(io.CONDITIONS['well_conditioned'])}
     ref, sub = tmp_path / 'ref', tmp_path / 'sub'
     _build_reference(ref, vols, reps, wells); _build_submission(sub, vols, reps, wells)
@@ -186,3 +191,28 @@ def test_figures_command_writes_pdfs(tmp_path, small_fields):
     assert cli.main(['figures', str(out), '--out', str(tmp_path / 'figs')]) == 0
     pdfs = sorted(p.name for p in (tmp_path / 'figs').glob('*.pdf'))
     assert pdfs == ['scores_field_scale.pdf', 'scores_overview.pdf', 'scores_unconditional.pdf', 'scores_well_conditioned.pdf']
+
+
+def test_paired_repeats_never_compare_a_run_with_its_own_resmill_run():
+    """v1.1 per-run repeats: model run k is tied to ResMill run k, so each draw compares the model's runs tied to
+    one half of ResMill's runs with the other half."""
+    from resbench.bands import run_index
+    ids = np.array([f'cond0|{k}' for k in (2, 0, 3, 1)], dtype=object)
+    assert list(run_index(ids, 4)) == [1, 3, 0, 2]
+    assert run_index(ids, 5) is None                                     # not one run per ResMill run
+    assert run_index(np.array(['a', 'b'], dtype=object), 2) is None      # ids without a run index
+
+    class Ident:   # summary = the set of run labels; distance = how many labels the two sides share
+        @staticmethod
+        def summarize(v, ctx=None): return {'labels': set(int(x) for x in np.asarray(v).ravel())}
+        @staticmethod
+        def merge(parts): return {'labels': set().union(*(p['labels'] for p in parts))}
+        @staticmethod
+        def compare(a, b): return {'parts': {'shared': float(len(a['labels'] & b['labels']))}}
+    n = 16
+    ref = {'cond0': (np.arange(n), {})}
+    model = {'cond0': np.arange(n)}                      # model run k carries label k, like ResMill run k
+    mids = {'cond0': np.array([f'cond0|{k}' for k in range(n)], dtype=object)}
+    paired = bands.matched_distance_repeats(Ident, model, ref, k=20, model_ids=mids)
+    unpaired = bands.matched_distance_repeats(Ident, model, ref, k=20)
+    assert paired['shared'] == 0.0 and unpaired['shared'] > 0

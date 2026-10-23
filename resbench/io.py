@@ -27,14 +27,16 @@ FIELD_EXTENT = {e: ((512, 512, 32) if e in ('lobe', 'delta') else (512, 128, 32)
 NATIVE_SHAPE = (64, 64, 32)
 
 # Repeats: many runs of ONE fixed input, for variety / calibration /
-# well_blending. Five conditions per environment in each task. A submission
-# holds `<task>/<slug>/repeats/<condition>.npz` with K_REPEATS volumes and
-# ids `<condition>|<k>`; the reference holds `ref/repeats/<slug>/<condition>.npz`
-# with at least as many ResMill runs, and for wells also `pattern`,
-# `well_mask` and `well_xy`. The manifest maps each condition to its inputs.
+# well_blending. Five conditions per environment in each task. The reference
+# holds `ref/repeats/<slug>/<condition>.npz` with ResMill's runs (K_REPEATS for
+# cond0-4, up to K_REPEATS exact matches for well1-5), and for wells also
+# `pattern`, `well_mask` and `well_xy`. A submission holds
+# `<task>/<slug>/repeats/<condition>.npz` with one run per ResMill run, id
+# `<condition>|<k>` for ResMill run k, conditioned on that run's realised sand
+# fraction (`resbench repeat-inputs`). The manifest maps each condition to its inputs.
 CONDITIONS = {'unconditional': tuple(f'cond{i}' for i in range(5)),
               'well_conditioned': tuple(f'well{i}' for i in range(1, 6))}
-K_REPEATS = 128
+K_REPEATS = 256
 
 
 class SubmissionError(Exception):
@@ -180,3 +182,19 @@ def repeats_ctx(cond, extras):
     if 'well_mask' in extras:
         c['well_mask'] = np.asarray(extras['well_mask'])
     return c
+
+
+def repeat_run_ntg(reference_root, env, cond):
+    """Repeat inputs: the realised sand fraction of each of ResMill's runs at one repeat condition,
+    in run order. ResMill is given a requested sand fraction and its runs scatter around it, so a model is
+    asked for one volume per engine run, conditioned on that run's realised sand fraction; both ensembles
+    then carry the same spread of sand fractions and the checks compare only the spatial uncertainty."""
+    z = np.load(Path(reference_root) / 'repeats' / SLUG[env] / f'{cond}.npz', allow_pickle=True)
+    v = np.asarray(z['volumes'])
+    return v.reshape(len(v), -1).mean(axis=1).astype(np.float64)
+
+
+def repeat_run_count(reference_root, env, cond):
+    """How many runs ResMill has at one repeat condition: the number a submission provides."""
+    z = np.load(Path(reference_root) / 'repeats' / SLUG[env] / f'{cond}.npz', allow_pickle=True)
+    return len(z['ids'])

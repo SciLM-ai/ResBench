@@ -40,10 +40,10 @@ def summarize(vols, ctx=None):
     v = np.asarray(vols)
     along = A.ensemble_chords(v, az)
     across = A.ensemble_chords(v, az + 90.0)
-    ma = float(np.mean(along)) if len(along) else float('nan')
-    mp = float(np.mean(across)) if len(across) else float('nan')
-    return {'hist': _hist(along), 'along_sum': ma * len(along),
-            'along_n': len(along), 'across_sum': mp * len(across),
+    # Plain sums and counts, so a volume with no uncensored chord adds zero instead of NaN and
+    # the pooled ratio does not depend on how the volumes are grouped.
+    return {'hist': _hist(along), 'along_sum': float(np.sum(along)),
+            'along_n': len(along), 'across_sum': float(np.sum(across)),
             'across_n': len(across)}
 
 

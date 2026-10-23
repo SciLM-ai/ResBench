@@ -87,7 +87,8 @@ at the same extent as the comparison.
 | `MANIFEST_SEED` | 20260726 | which 512 test volumes are the reference, and their noise seeds (frozen protocol, EVAL.md 6) |
 | `WELL_XY_SEED` | 20260919 | `(well_x, well_y)` per reference row |
 | repeats `SEED_BASE` | 20260921 | ResMill seeds for `cond<i>`, via `default_rng([SEED_BASE, env_index, i])` |
-| `SPLIT_SEED` | 20260918 | the half/half partition used for every band |
+| `SPLIT_SEED` | 20260918 | the random half/half partitions of each band, `default_rng([SPLIT_SEED, i])` (repeats: `[SPLIT_SEED, i, condition]`); your model's draws use `SPLIT_SEED + 1` |
+| `N_SPLITS` | 500 (repeats checks: 200) | partitions averaged in each band, and draws in each model distance |
 | noise seed | one per manifest row | your model's starting noise |
 | field `SEED_BASE` | 2026091800 | ResMill seeds for the field reference |
 | `WELL_POOL_SEED` | 20260922 | ResMill seeds of the well pools, via `default_rng([WELL_POOL_SEED, env_index, row_index])` |

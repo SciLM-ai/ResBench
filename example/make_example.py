@@ -49,14 +49,16 @@ def main():
         np.savez_compressed(d / 'shard00.npz', ids=np.array(vol_ids, dtype=object), volumes=v)
     d = out / 'unconditional' / slug / 'repeats'; d.mkdir(parents=True, exist_ok=True)
     for cond in io.CONDITIONS['unconditional']:
-        np.savez_compressed(d / f'{cond}.npz', ids=np.array([f'{cond}|{k}' for k in range(io.K_REPEATS)], dtype=object),
-                            volumes=blobs(io.K_REPEATS, io.NATIVE_SHAPE, rng))
+        n = io.repeat_run_count(ref, env, cond)     # one run per ResMill run (`resbench repeat-inputs`)
+        np.savez_compressed(d / f'{cond}.npz', ids=np.array([f'{cond}|{k}' for k in range(n)], dtype=object),
+                            volumes=blobs(n, io.NATIVE_SHAPE, rng))
     d = out / 'well_conditioned' / slug / 'repeats'; d.mkdir(parents=True, exist_ok=True)
     for cond in io.CONDITIONS['well_conditioned']:
         w = wells[cond]; x, y = int(w['well_x']), int(w['well_y'])
         pat = np.array([int(c) for c in w['pattern']], np.int8)
-        v = blobs(io.K_REPEATS, io.NATIVE_SHAPE, rng); v[:, x, y, :] = pat
-        np.savez_compressed(d / f'{cond}.npz', ids=np.array([f'{cond}|{k}' for k in range(io.K_REPEATS)], dtype=object), volumes=v)
+        n = io.repeat_run_count(ref, env, cond)
+        v = blobs(n, io.NATIVE_SHAPE, rng); v[:, x, y, :] = pat
+        np.savez_compressed(d / f'{cond}.npz', ids=np.array([f'{cond}|{k}' for k in range(n)], dtype=object), volumes=v)
     d = out / 'field_scale' / slug / 'fields'; d.mkdir(parents=True, exist_ok=True)
     ext = io.FIELD_EXTENT[env]
     for s in range(0, len(field_ids), 4):
@@ -64,7 +66,7 @@ def main():
         np.savez_compressed(d / f'shard{s // 4:02d}.npz', ids=np.array(ids, dtype=object),
                             volumes=blobs(len(ids), ext, rng))
     (out / 'submission.yaml').write_text('model: example\nsampler: none\nnfe: 0\ntraining_set: none\n')
-    print(f'wrote {out}: run  resbench validate {out} --envs {env}')
+    print(f'wrote {out}: run  resbench validate {out} --reference {ref} --envs {env}')
 
 
 if __name__ == '__main__':

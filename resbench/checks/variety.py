@@ -7,9 +7,9 @@ Nothing else catches it: the other checks pool across 512 DIFFERENT
 conditions, and a model that is deterministic per condition but responsive
 across them looks fine in all of them.
 
-Run the model 128 times on one fixed input, count how often each cell came out
-sand, and turn that into entropy in bits: a cell that is the same rock every
-time scores 0, a coin-flip cell scores 1.
+Run the model many times on one fixed input (one run per ResMill run), count how
+often each cell came out sand, and turn that into entropy in bits: a cell that is
+the same rock every time scores 0, a coin-flip cell scores 1.
 
 Without a well that map is nearly flat. Measured on 256 ResMill runs of one
 lobe parameter vector, mean entropy is 0.98 with a standard deviation of 0.02

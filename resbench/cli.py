@@ -61,6 +61,8 @@ def _envs(a):
 
 def cmd_validate(a):
     root = Path(a.submission)
+    ref = getattr(a, 'reference', None) or os.environ.get(REFERENCE_ENV)    # local only; validate never downloads
+    ref = Path(ref) if ref else None
     meta = io.read_meta(root)
     problems, found = [], 0
     for task in io.TASKS:
@@ -78,8 +80,9 @@ def cmd_validate(a):
                             w = f'{d.relative_to(root)}/{cond}'
                             io.check_shape(vols, shape, w)
                             io.check_binary(vols, w)
-                            if len(vols) < io.K_REPEATS:
-                                raise io.SubmissionError(f'{w}: {len(vols)} runs, need {io.K_REPEATS}')
+                            if ref is not None and len(vols) != io.repeat_run_count(ref, env, cond):
+                                raise io.SubmissionError(f'{w}: {len(vols)} runs, need one per ResMill run '
+                                                         f'({io.repeat_run_count(ref, env, cond)})')
                     else:
                         ids, vols = next(io.iter_shards(d))
                         io.check_shape(vols, shape, str(d.relative_to(root)))
@@ -108,7 +111,24 @@ def _shard_ctx(ctx, ids, targets, where):
     return c
 
 
+def _per_volume(mod, directory, ctx, targets, where):
+    """One summary per volume, in the directory's shard order (per-volume targets sliced along)."""
+    out = []
+    for ids, vols in io.iter_shards(directory):
+        c = _shard_ctx(ctx, ids, targets, where)
+        for j in range(len(vols)):
+            cj = c if 'target_ntg' not in c else {**c, 'target_ntg': np.asarray(c['target_ntg'])[j:j + 1]}
+            out.append(mod.summarize(vols[j:j + 1], cj))
+    return out
+
+
 def _score_part(mod, model_dir, ref_dir, ctx, targets=None):
+    if getattr(mod, 'TOLERANCE', None) is None:
+        m = _per_volume(mod, model_dir, ctx, targets, str(model_dir))
+        r = _per_volume(mod, ref_dir, ctx, targets, str(ref_dir))
+        d = bands.matched_distance(mod, m, r)
+        b = bands.expected_band(mod, r)
+        return score.s_for_check(d, b), {'parts': d}
     m = mod.merge([mod.summarize(v, _shard_ctx(ctx, i, targets, str(model_dir)))
                    for i, v in io.iter_shards(model_dir)])
     r = mod.merge([mod.summarize(v, _shard_ctx(ctx, i, targets, str(ref_dir)))
@@ -123,25 +143,28 @@ def _score_part(mod, model_dir, ref_dir, ctx, targets=None):
 def _score_repeats(mod, model_dir, ref_dir, task, where):
     """Score one repeats-based check: per condition, many runs of one input.
 
-    The band is ResMill's own ensemble split in half at the same condition,
-    so `s = 1` means the model's spread is as far from ResMill's as two halves
-    of ResMill are from each other.
+    The band is ResMill's own runs split in half at the same condition, averaged over many splits. The model's
+    runs tied to one half of ResMill's runs are compared with the other half, so `s = 1` means the model's spread
+    is as far from ResMill's as two halves of ResMill are from each other.
     """
     model = io.load_repeats(model_dir, task, where=f'{where} (submission)')
     ref = io.load_repeats(ref_dir, task, where=f'{where} (reference)')
-    m_parts, r_parts, groups = [], [], {}
+    groups = {}
     for cond in io.CONDITIONS[task]:
         _, mv, _ = model[cond]
         _, rv, extras = ref[cond]
-        if len(mv) < io.K_REPEATS:
-            raise io.SubmissionError(f'{where}/{cond}: {len(mv)} runs, need {io.K_REPEATS}')
+        if len(mv) < len(rv) // 2:
+            raise io.SubmissionError(f'{where}/{cond}: {len(mv)} runs, need one per ResMill run ({len(rv)})')
+        if len(mv) != len(rv):
+            print(f'  note {where}/{cond}: {len(mv)} model runs for {len(rv)} ResMill runs '
+                  f'(one per ResMill run is asked for, see `resbench repeat-inputs`)', file=sys.stderr)
         ctx = io.repeats_ctx(cond, extras)      # the reference defines the well
-        m_parts.append(mod.summarize(mv, ctx))
-        r_parts.append(mod.summarize(rv, ctx))
         groups[cond] = (rv, ctx)
-    d = mod.compare(mod.merge(m_parts), mod.merge(r_parts))
-    b = bands.band_for_repeats(mod, groups)
-    return score.s_for_check(d['parts'], b), d
+    mg = {cond: model[cond][1] for cond in io.CONDITIONS[task]}
+    mids = {cond: model[cond][0] for cond in io.CONDITIONS[task]}
+    d = bands.matched_distance_repeats(mod, mg, groups, model_ids=mids)
+    b = bands.expected_band_repeats(mod, groups)
+    return score.s_for_check(d, b), {'parts': d}
 
 
 def cmd_score(a):
@@ -196,6 +219,20 @@ def cmd_score(a):
     return 0
 
 
+def cmd_repeat_inputs(a):
+    """Write the repeat inputs: per environment, task and condition, the realised sand fraction of
+    each ResMill run. Generate one volume per listed value, with the condition's other parameters."""
+    ref = _reference_root(a.reference)
+    out = {}
+    for env in _envs(a):
+        out[env] = {task: {c: [round(float(x), 8) for x in io.repeat_run_ntg(ref, env, c)]
+                           for c in io.CONDITIONS[task]} for task in ('unconditional', 'well_conditioned')}
+    Path(a.out).write_text(json.dumps(out))
+    n = sum(len(v) for e in out.values() for t in e.values() for v in t.values())
+    print(f'wrote {a.out}: {n} runs over {len(out)} environment(s)')
+    return 0
+
+
 def cmd_figures(a):
     from . import figures as _f
     for p in _f.make(a.results, a.out):
@@ -209,6 +246,7 @@ def main(argv=None):
     p = sub.add_parser('download'); p.set_defaults(fn=cmd_download)
     envs_help = 'comma-separated subset of environments (default: all eight; a ranked submission needs all eight)'
     p = sub.add_parser('validate'); p.add_argument('submission')
+    p.add_argument('--reference', help='local reference; checks one repeat run per ResMill run')
     p.add_argument('--envs', help=envs_help); p.set_defaults(fn=cmd_validate)
     p = sub.add_parser('score'); p.add_argument('submission')
     p.add_argument('--reference'); p.add_argument('--out')
@@ -218,6 +256,8 @@ def main(argv=None):
                         "realized value, the published condition) unless the submission "
                         "predates the manifest and was conditioned on 'ntg_source_cube'")
     p.set_defaults(fn=cmd_score)
+    p = sub.add_parser('repeat-inputs'); p.add_argument('--reference'); p.add_argument('--envs', help=envs_help)
+    p.add_argument('--out', default='repeat_inputs.json'); p.set_defaults(fn=cmd_repeat_inputs)
     p = sub.add_parser('figures'); p.add_argument('results')
     p.add_argument('--out', default='figures'); p.set_defaults(fn=cmd_figures)
     a = ap.parse_args(argv)

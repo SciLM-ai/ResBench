@@ -2,10 +2,10 @@
 
 Builds a submission out of REF (every reference volume, field and repeat
 ensemble, in the submission layout) and runs `resbench validate` and
-`resbench score` on it. Every samples-based check must come out at 0; the
-repeats-based checks compare the first 128 members with the whole ensemble
-and land well below 1 (well ensembles shorter than 128 are cycled). Anything
-else means the reference, the manifest and the checks disagree.
+`resbench score` on it. ResMill scored against itself must land near 1 on
+every check (the net_to_gross tolerance check at 0): halves of the reference
+are compared at the band's own sample size. Anything else means the reference,
+the manifest and the checks disagree.
 
     python tools/reference_self_check.py REF OUT_DIR
 """
@@ -34,9 +34,8 @@ def build(ref, sub):
                     continue
                 v = np.load(f, allow_pickle=True)['volumes']
                 d = sub / task / slug / 'repeats'; d.mkdir(parents=True, exist_ok=True)
-                idx = np.arange(io.K_REPEATS) % len(v)
-                np.savez_compressed(d / f'{cond}.npz', volumes=v[idx],
-                                    ids=np.array([f'{cond}|{k}' for k in range(io.K_REPEATS)], dtype=object))
+                np.savez_compressed(d / f'{cond}.npz', volumes=v,
+                                    ids=np.array([f'{cond}|{k}' for k in range(len(v))], dtype=object))
         f = ref / 'fields' / slug / 'fields.npz'
         if f.exists():
             zf = np.load(f, allow_pickle=True)
@@ -51,7 +50,7 @@ def main():
     ref, sub = Path(sys.argv[1]), Path(sys.argv[2])
     build(ref, sub)
     here = Path(__file__).resolve().parents[1]
-    for args in (['validate', str(sub)], ['score', str(sub), '--reference', str(ref), '--out', str(sub / 'results.json')]):
+    for args in (['validate', str(sub), '--reference', str(ref)], ['score', str(sub), '--reference', str(ref), '--out', str(sub / 'results.json')]):
         print(f'\n$ resbench {" ".join(args)}', flush=True)
         r = subprocess.run([sys.executable, '-m', 'resbench.cli'] + args, cwd=here, text=True, capture_output=True)
         print(r.stdout); print(r.stderr[-4000:], file=sys.stderr)
