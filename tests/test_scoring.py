@@ -194,7 +194,7 @@ def test_figures_command_writes_pdfs(tmp_path, small_fields):
 
 
 def test_paired_repeats_never_compare_a_run_with_its_own_resmill_run():
-    """v1.1 per-run repeats: model run k is tied to ResMill run k, so each draw compares the model's runs tied to
+    """Per-run repeats: model run k is tied to ResMill run k, so each draw compares the model's runs tied to
     one half of ResMill's runs with the other half."""
     from resbench.bands import run_index
     ids = np.array([f'cond0|{k}' for k in (2, 0, 3, 1)], dtype=object)
