@@ -2,9 +2,11 @@
 
 Builds a submission out of REF (every reference volume, field and repeat
 ensemble, in the submission layout) and runs `resbench validate` and
-`resbench score` on it. ResMill scored against itself must land near 1 on
-every check (the net_to_gross tolerance check at 0): halves of the reference
-are compared at the band's own sample size. Anything else means the reference,
+`resbench score` on it. The repeats-based checks pair ResMill's own runs half
+against half and must land near 1; the samples-based checks land near 0.7,
+because the self-submission reuses the reference volumes, so each draw's model
+half overlaps the reference half it is compared with (an independent ResMill
+sample scores about 1); net_to_gross is 0. Anything else means the reference,
 the manifest and the checks disagree.
 
     python tools/reference_self_check.py REF OUT_DIR
