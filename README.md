@@ -1,13 +1,13 @@
 # ResBench
 
-**ResMill** is a geological process simulator that builds 3D sand-and-shale reservoirs by
-simulating deposition: channels migrating and avulsing, lobes spreading and stacking.
+**ResMill** is a rule-based geological simulator that builds 3D sand-and-shale reservoirs by
+mimicking deposition: channels migrating and avulsing, lobes spreading and stacking.
 
 **ResBench** asks whether a generative AI model can build reservoirs that no check in this
 benchmark can tell apart from ResMill's.
 
 ```bash
-pip install "resbench[download]"
+pip install "resbench[download] @ git+https://github.com/SciLM-ai/ResBench"
 resbench download                   # ResMill reference from HuggingFace, 250 MB
 resbench validate ./my_submission   # shapes, ids; counts too with --reference; fails fast
 resbench score    ./my_submission   # the table below, plus results.json
@@ -156,7 +156,7 @@ by 5.9x its band and another by 8.0x.
 ```
 $ resbench score ./my_submission
 
-ResBench v1 · 8 environments · sampler heun-100 · NFE 100
+ResBench v1 · 8 environments · sampler euler-100 · NFE 100
 
                        score   matched   weakest
   unconditional         0.94     10/11   connectivity   2.4
@@ -217,9 +217,8 @@ extents.
 
 **Yours, and printed on the leaderboard:** architecture, training recipe, sampler and step
 count, guidance, precision, how you reached field scale. The sampler is deliberately not
-fixed — a step count from one architecture's paper penalizes every other architecture; our
-own model scores 0.086 at 50 Euler steps and 0.058 at 100 Heun steps. **NFE is a
-leaderboard column** instead.
+fixed — a step count from one architecture's paper penalizes every other architecture.
+**NFE is a leaderboard column** instead.
 
 **Disqualifying:** training or tuning on the test split · misdeclaring your training set ·
 hand-picking outputs · leaving out environments or tasks · returning volumes retrieved or

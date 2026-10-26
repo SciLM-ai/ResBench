@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "resbench"
 version = "1.0.0"
-description = "A benchmark for generative AI models of 3D reservoir geology, measured against the ResMill process simulator"
+description = "A benchmark for generative AI models of 3D reservoir geology, measured against the ResMill rule-based simulator"
 requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.24",
