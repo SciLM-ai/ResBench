@@ -92,11 +92,9 @@ ARTIFACT_MAX = 8  # Addendum F.5: artifacts are 6-connected sand bodies < 8 voxe
 
 
 def artifact_counts(vols, max_size=ARTIFACT_MAX):
-    """Per-volume count of artifact bodies (Addendum F.5).
-
-    One definition shared by the F.5 component (analysis/acceptance_ext.py)
-    and the additive assembly diagnostics (analysis/assembly_stats_ext.py),
-    so the threshold cannot drift between them.
+    """Per-volume count of artifact bodies: sand bodies smaller than
+    ``max_size`` cells. One definition, so the threshold cannot drift between
+    the checks that use it.
     """
     return np.array([(geobody_sizes(v) < max_size).sum() for v in vols],
                     dtype=np.int64)

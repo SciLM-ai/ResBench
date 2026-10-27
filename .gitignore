@@ -4,3 +4,11 @@ __pycache__/
 *.pyc
 # volume ensembles live outside the repo; results (parquet/figures/tables) are committed
 volumes/
+
+# Earlier study outputs and analysis scripts, kept locally only
+RESULTS.md
+PROPOSED_EXTENSIONS.md
+results/
+analysis/
+paper/
+logs/
